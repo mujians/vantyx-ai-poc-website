@@ -223,4 +223,5 @@ const VoiceInput: React.FC<VoiceInputProps> = ({
   );
 };
 
+export { VoiceInput };
 export default VoiceInput;
