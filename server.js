@@ -30,7 +30,7 @@ const openai = trackOpenAIUsage(new OpenAI({
 }));
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = parseInt(process.env.PORT, 10) || 3000;
 
 // Sentry request handler must be the first middleware
 if (process.env.SENTRY_DSN) {
