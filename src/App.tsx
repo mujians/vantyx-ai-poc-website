@@ -51,6 +51,12 @@ function App() {
     setInputValue(prompt);
   };
 
+  const defaultPrompts = [
+    { id: '1', text: 'Cos\'è Vantyx?', category: 'prospect' as const },
+    { id: '2', text: 'Come funziona?', category: 'prospect' as const },
+    { id: '3', text: 'Prezzi e piani', category: 'prospect' as const },
+  ];
+
   return (
     <>
       <OfflineBanner isOffline={isOffline} wasOffline={wasOffline} />
@@ -101,7 +107,7 @@ function App() {
             </CardBody>
 
             <div className="border-t border-gray-700 p-4 space-y-3">
-              <MicroPrompts onPromptClick={handleMicroPromptClick} />
+              <MicroPrompts prompts={defaultPrompts} onPromptClick={handleMicroPromptClick} />
 
               <div className="flex gap-2">
                 <Input

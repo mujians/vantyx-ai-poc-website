@@ -48,5 +48,6 @@ const MicroPrompts: React.FC<MicroPromptsProps> = ({
   );
 };
 
+export { MicroPrompts };
 export default MicroPrompts;
 export type { MicroPrompt, MicroPromptsProps, PromptCategory };
