@@ -32,6 +32,7 @@ interface WindowStore {
   cleanupInactiveWindows: () => void;
   startCleanupTimer: () => void;
   stopCleanupTimer: () => void;
+  reset: () => void;
 }
 
 export const useWindowStore = create<WindowStore>()(
@@ -192,6 +193,19 @@ export const useWindowStore = create<WindowStore>()(
           window.clearInterval(cleanupInterval);
           set({ cleanupInterval: null });
         }
+      },
+
+      reset: () => {
+        const { cleanupInterval } = get();
+
+        if (cleanupInterval !== null) {
+          window.clearInterval(cleanupInterval);
+        }
+
+        set({
+          windows: [],
+          cleanupInterval: null,
+        });
       },
     }),
     {

@@ -5,18 +5,12 @@ import { useWindowStore, WindowData } from '../src/stores/windowStore';
 describe('WindowManager - useWindowStore', () => {
   beforeEach(() => {
     // Reset store state before each test
-    const { result } = renderHook(() => useWindowStore());
-    act(() => {
-      result.current.windows.forEach((w) => result.current.closeWindow(w.id));
-    });
+    useWindowStore.getState().reset();
   });
 
   afterEach(() => {
     // Clean up timers
-    const { result } = renderHook(() => useWindowStore());
-    act(() => {
-      result.current.stopCleanupTimer();
-    });
+    useWindowStore.getState().stopCleanupTimer();
   });
 
   describe('openWindow', () => {
@@ -122,7 +116,6 @@ describe('WindowManager - useWindowStore', () => {
   describe('closeWindow', () => {
     it('should remove a window by ID', () => {
       const { result } = renderHook(() => useWindowStore());
-      let windowId: string;
 
       act(() => {
         result.current.openWindow({
@@ -131,9 +124,9 @@ describe('WindowManager - useWindowStore', () => {
           position: { x: 100, y: 100 },
           size: { width: 400, height: 300 },
         });
-        windowId = result.current.windows[0].id;
       });
 
+      const windowId = result.current.windows[0].id;
       expect(result.current.windows).toHaveLength(1);
 
       act(() => {
@@ -154,7 +147,11 @@ describe('WindowManager - useWindowStore', () => {
           position: { x: 100, y: 100 },
           size: { width: 400, height: 300 },
         });
-        windowId1 = result.current.windows[0].id;
+      });
+
+      windowId1 = result.current.windows[0].id;
+
+      act(() => {
         result.current.openWindow({
           title: 'Window 2',
           component: 'Component2',
@@ -186,9 +183,9 @@ describe('WindowManager - useWindowStore', () => {
           position: { x: 100, y: 100 },
           size: { width: 400, height: 300 },
         });
-        windowId = result.current.windows[0].id;
       });
 
+      windowId = result.current.windows[0].id;
       expect(result.current.windows[0].isMinimized).toBe(false);
 
       act(() => {
@@ -198,7 +195,7 @@ describe('WindowManager - useWindowStore', () => {
       expect(result.current.windows[0].isMinimized).toBe(true);
     });
 
-    it('should update lastInteraction timestamp when minimizing', () => {
+    it('should update lastInteraction timestamp when minimizing', async () => {
       const { result } = renderHook(() => useWindowStore());
       let windowId: string;
       let originalTimestamp: number;
@@ -210,18 +207,19 @@ describe('WindowManager - useWindowStore', () => {
           position: { x: 100, y: 100 },
           size: { width: 400, height: 300 },
         });
-        windowId = result.current.windows[0].id;
-        originalTimestamp = result.current.windows[0].lastInteraction;
       });
 
-      // Wait a bit to ensure timestamp difference
-      setTimeout(() => {
-        act(() => {
-          result.current.minimizeWindow(windowId);
-        });
+      windowId = result.current.windows[0].id;
+      originalTimestamp = result.current.windows[0].lastInteraction;
 
-        expect(result.current.windows[0].lastInteraction).toBeGreaterThan(originalTimestamp);
-      }, 10);
+      // Wait a bit to ensure timestamp difference
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      act(() => {
+        result.current.minimizeWindow(windowId);
+      });
+
+      expect(result.current.windows[0].lastInteraction).toBeGreaterThan(originalTimestamp);
     });
   });
 
@@ -237,7 +235,11 @@ describe('WindowManager - useWindowStore', () => {
           position: { x: 100, y: 100 },
           size: { width: 400, height: 300 },
         });
-        windowId = result.current.windows[0].id;
+      });
+
+      windowId = result.current.windows[0].id;
+
+      act(() => {
         result.current.openWindow({
           title: 'Window 2',
           component: 'Component2',
@@ -271,8 +273,9 @@ describe('WindowManager - useWindowStore', () => {
           position: { x: 100, y: 100 },
           size: { width: 400, height: 300 },
         });
-        windowId = result.current.windows[0].id;
       });
+
+      windowId = result.current.windows[0].id;
 
       act(() => {
         result.current.toggleMaximize(windowId);
@@ -296,7 +299,11 @@ describe('WindowManager - useWindowStore', () => {
           position: { x: 100, y: 100 },
           size: { width: 400, height: 300 },
         });
-        windowId = result.current.windows[0].id;
+      });
+
+      windowId = result.current.windows[0].id;
+
+      act(() => {
         result.current.toggleMaximize(windowId);
       });
 
@@ -326,15 +333,20 @@ describe('WindowManager - useWindowStore', () => {
           position: { x: 100, y: 100 },
           size: { width: 400, height: 300 },
         });
-        windowId1 = result.current.windows[0].id;
+      });
+
+      windowId1 = result.current.windows[0].id;
+
+      act(() => {
         result.current.openWindow({
           title: 'Window 2',
           component: 'Component2',
           position: { x: 200, y: 200 },
           size: { width: 400, height: 300 },
         });
-        windowId2 = result.current.windows[1].id;
       });
+
+      windowId2 = result.current.windows[1].id;
 
       expect(result.current.windows[0].zIndex).toBe(1);
       expect(result.current.windows[1].zIndex).toBe(2);
@@ -358,9 +370,9 @@ describe('WindowManager - useWindowStore', () => {
           position: { x: 100, y: 100 },
           size: { width: 400, height: 300 },
         });
-        windowId = result.current.windows[0].id;
       });
 
+      windowId = result.current.windows[0].id;
       const initialZIndex = result.current.windows[0].zIndex;
 
       act(() => {
@@ -383,8 +395,9 @@ describe('WindowManager - useWindowStore', () => {
           position: { x: 100, y: 100 },
           size: { width: 400, height: 300 },
         });
-        windowId = result.current.windows[0].id;
       });
+
+      windowId = result.current.windows[0].id;
 
       act(() => {
         result.current.updateWindowPosition(windowId, { x: 200, y: 300 });
@@ -406,8 +419,9 @@ describe('WindowManager - useWindowStore', () => {
           position: { x: 100, y: 100 },
           size: { width: 400, height: 300 },
         });
-        windowId = result.current.windows[0].id;
       });
+
+      windowId = result.current.windows[0].id;
 
       act(() => {
         result.current.updateWindowSize(windowId, { width: 600, height: 500 });
@@ -429,7 +443,11 @@ describe('WindowManager - useWindowStore', () => {
           position: { x: 100, y: 100 },
           size: { width: 400, height: 300 },
         });
-        windowId = result.current.windows[0].id;
+      });
+
+      windowId = result.current.windows[0].id;
+
+      act(() => {
         result.current.minimizeWindow(windowId);
       });
 
@@ -481,8 +499,9 @@ describe('WindowManager - useWindowStore', () => {
           position: { x: 100, y: 100 },
           size: { width: 400, height: 300 },
         });
-        windowId = result.current.windows[0].id;
       });
+
+      windowId = result.current.windows[0].id;
 
       // Manually set lastInteraction to an old timestamp but don't minimize
       act(() => {
@@ -590,22 +609,31 @@ describe('WindowManager - useWindowStore', () => {
           position: { x: 100, y: 100 },
           size: { width: 400, height: 300 },
         });
-        windowId1 = result.current.windows[0].id;
+      });
+
+      windowId1 = result.current.windows[0].id;
+
+      act(() => {
         result.current.openWindow({
           title: 'Window 2',
           component: 'Component2',
           position: { x: 200, y: 200 },
           size: { width: 400, height: 300 },
         });
-        windowId2 = result.current.windows[1].id;
+      });
+
+      windowId2 = result.current.windows[1].id;
+
+      act(() => {
         result.current.openWindow({
           title: 'Window 3',
           component: 'Component3',
           position: { x: 300, y: 300 },
           size: { width: 400, height: 300 },
         });
-        windowId3 = result.current.windows[2].id;
       });
+
+      windowId3 = result.current.windows[2].id;
 
       // Focus windows in different order
       act(() => {

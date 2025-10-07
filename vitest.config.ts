@@ -32,6 +32,6 @@ export default defineConfig({
     globals: true,
 
     // Include patterns
-    include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    include: ['src/**/*.{test,spec}.{ts,tsx}', 'tests/**/*.{test,spec}.{ts,tsx}'],
   },
 });
