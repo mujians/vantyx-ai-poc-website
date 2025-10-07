@@ -44,9 +44,13 @@ if (process.env.SENTRY_DSN) {
   app.use(Sentry.Handlers.tracingHandler());
 }
 
+// Serve static files FIRST (before CORS and other middleware)
+app.use(express.static(path.join(__dirname, 'dist')));
+
 // CORS configuration
 const allowedOrigins = [
   'http://localhost:5173',
+  'https://vantyx-ai-poc-website.onrender.com',
   process.env.PRODUCTION_DOMAIN || ''
 ].filter(Boolean);
 
@@ -377,12 +381,9 @@ app.post('/api/chat', async (req, res) => {
   }
 });
 
-// Serve static files from dist directory (production build)
-app.use(express.static(path.join(__dirname, 'dist')));
-
-// SPA fallback - serve index.html for all non-API routes
+// SPA fallback - serve index.html for all non-API routes (at the end)
 app.use((req, res, next) => {
-  // If it's not an API route and file doesn't exist, serve index.html
+  // If it's not an API route, serve index.html for client-side routing
   if (!req.path.startsWith('/api/')) {
     res.sendFile(path.join(__dirname, 'dist', 'index.html'));
   } else {
