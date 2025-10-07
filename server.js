@@ -7,6 +7,11 @@ import validateEnv from './envValidation.js';
 import DOMPurify from 'isomorphic-dompurify';
 import * as Sentry from '@sentry/node';
 import { trackOpenAIUsage, getUsageStats } from './src/middleware/openaiUsageTracking.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 dotenv.config();
 validateEnv();
@@ -370,6 +375,14 @@ app.post('/api/chat', async (req, res) => {
       res.end();
     }
   }
+});
+
+// Serve static files from dist directory (production build)
+app.use(express.static(path.join(__dirname, 'dist')));
+
+// SPA fallback - serve index.html for all non-API routes
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
 // Sentry error handler must be before any other error middleware and after all controllers
