@@ -1,7 +1,6 @@
-/* Tailwind directives temporarily disabled for performance audit */
-/* @tailwind base; */
-/* @tailwind components; */
-/* @tailwind utilities; */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 * {
   margin: 0;

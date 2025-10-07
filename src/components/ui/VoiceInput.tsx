@@ -32,7 +32,7 @@ const VoiceInput: React.FC<VoiceInputProps> = ({
   const recognitionRef = useRef<SpeechRecognition | null>(null);
 
   useEffect(() => {
-    requestMicrophonePermission();
+    // Only initialize Speech Recognition, don't request permission yet
     initializeSpeechRecognition();
 
     return () => {
@@ -121,8 +121,14 @@ const VoiceInput: React.FC<VoiceInputProps> = ({
     }
   };
 
-  const handleVoiceInput = () => {
-    if (!hasPermission || !recognitionRef.current) return;
+  const handleVoiceInput = async () => {
+    // Request permission on first click
+    if (!hasPermission) {
+      await requestMicrophonePermission();
+      if (!hasPermission) return; // If permission denied, don't proceed
+    }
+
+    if (!recognitionRef.current) return;
 
     if (state === 'recording') {
       recognitionRef.current.stop();
