@@ -1,0 +1,320 @@
+# Content Security Policy (CSP) - Vantyx.ai POC Website
+# Definizione della politica di sicurezza dei contenuti per l'applicazione
+
+## VERSIONE: 1.0
+## DATA: 2025-10-07
+## APPLICAZIONE: Vantyx.ai POC Website
+
+================================================================================
+## 1. POLICY COMPLETA (Production-Ready)
+================================================================================
+
+Content-Security-Policy:
+  default-src 'self';
+  script-src 'self' 'unsafe-inline' 'unsafe-eval';
+  style-src 'self' 'unsafe-inline';
+  img-src 'self' data: https:;
+  font-src 'self' data:;
+  connect-src 'self' https://api.openai.com https://api.anthropic.com;
+  media-src 'self';
+  object-src 'none';
+  frame-src 'none';
+  base-uri 'self';
+  form-action 'self';
+  frame-ancestors 'none';
+  upgrade-insecure-requests;
+  block-all-mixed-content;
+
+================================================================================
+## 2. ANALISI DETTAGLIATA DELLE DIRETTIVE
+================================================================================
+
+### 2.1 default-src 'self'
+- Politica di fallback per tutte le risorse non specificate
+- Permette solo risorse dalla stessa origine
+- Fornisce una base sicura per tutte le altre direttive
+
+### 2.2 script-src 'self' 'unsafe-inline' 'unsafe-eval'
+- 'self': Script dalla stessa origine
+- 'unsafe-inline': NECESSARIO per Vite/React in development e inline scripts
+- 'unsafe-eval': NECESSARIO per Vite HMR (Hot Module Replacement)
+- NOTA: In produzione, considerare l'uso di nonces o hashes per rimuovere 'unsafe-inline'
+
+### 2.3 style-src 'self' 'unsafe-inline'
+- 'self': Stylesheet dalla stessa origine
+- 'unsafe-inline': NECESSARIO per:
+  * Tailwind CSS inline styles
+  * React inline styles (style prop)
+  * CSS-in-JS solutions
+- NOTA: Tailwind genera utilities che richiedono inline styles
+
+### 2.4 img-src 'self' data: https:
+- 'self': Immagini dalla stessa origine
+- 'data:': Data URIs per immagini inline/base64
+- 'https:': Qualsiasi immagine HTTPS esterna
+- Permette avatar, loghi, e contenuti dinamici
+
+### 2.5 font-src 'self' data:
+- 'self': Font dalla stessa origine
+- 'data:': Font embedded via data URIs
+- Supporta web fonts locali e inline
+
+### 2.6 connect-src 'self' https://api.openai.com https://api.anthropic.com
+- 'self': API endpoint interni (backend Express)
+- 'https://api.openai.com': OpenAI API per chat completions
+- 'https://api.anthropic.com': Anthropic Claude API (whitelisted per future integrazioni)
+- Controlla tutte le connessioni fetch/XHR/WebSocket/EventSource
+
+### 2.7 media-src 'self'
+- Permette solo contenuti media (audio/video) dalla stessa origine
+- Previene embedding di contenuti multimediali non autorizzati
+
+### 2.8 object-src 'none'
+- BLOCCA completamente <object>, <embed>, <applet>
+- Previene plugin Flash, Java, e altri contenuti pericolosi
+
+### 2.9 frame-src 'none'
+- BLOCCA iframe completamente
+- Previene embedding di contenuti esterni in frame
+- Se necessario in futuro, specificare domini whitelisted
+
+### 2.10 base-uri 'self'
+- Limita <base> tag alla stessa origine
+- Previene attacchi che modificano i path relativi
+
+### 2.11 form-action 'self'
+- Limita form submission alla stessa origine
+- Previene phishing via form injection
+
+### 2.12 frame-ancestors 'none'
+- BLOCCA l'embedding del sito in iframe di altri siti
+- Equivalente a X-Frame-Options: DENY
+- Previene clickjacking attacks
+
+### 2.13 upgrade-insecure-requests
+- Converte automaticamente richieste HTTP in HTTPS
+- Importante per mixed content prevention
+
+### 2.14 block-all-mixed-content
+- BLOCCA esplicitamente qualsiasi contenuto HTTP su pagine HTTPS
+- Rinforza la sicurezza HTTPS
+
+================================================================================
+## 3. IMPLEMENTAZIONE SERVER-SIDE (Express.js)
+================================================================================
+
+### Implementazione attuale in server.js (linee 78-91):
+
+```javascript
+app.use((req, res, next) => {
+  res.setHeader('Content-Security-Policy',
+    "default-src 'self'; " +
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
+    "style-src 'self' 'unsafe-inline'; " +
+    "img-src 'self' data: https:; " +
+    "connect-src 'self' https://api.openai.com https://api.anthropic.com; " +
+    "font-src 'self' data:; " +
+    "media-src 'self'; " +
+    "object-src 'none'; " +
+    "frame-src 'none'; " +
+    "base-uri 'self'; " +
+    "form-action 'self'; " +
+    "frame-ancestors 'none'; " +
+    "upgrade-insecure-requests; " +
+    "block-all-mixed-content;"
+  );
+  next();
+});
+```
+
+### Modifica suggerita - Versione più gestibile:
+
+```javascript
+// CSP Configuration
+const cspDirectives = {
+  defaultSrc: ["'self'"],
+  scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+  styleSrc: ["'self'", "'unsafe-inline'"],
+  imgSrc: ["'self'", "data:", "https:"],
+  fontSrc: ["'self'", "data:"],
+  connectSrc: ["'self'", "https://api.openai.com", "https://api.anthropic.com"],
+  mediaSrc: ["'self'"],
+  objectSrc: ["'none'"],
+  frameSrc: ["'none'"],
+  baseUri: ["'self'"],
+  formAction: ["'self'"],
+  frameAncestors: ["'none'"],
+  upgradeInsecureRequests: [],
+  blockAllMixedContent: []
+};
+
+function buildCSP(directives) {
+  return Object.entries(directives)
+    .map(([key, values]) => {
+      const directive = key.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`);
+      return values.length > 0
+        ? `${directive} ${values.join(' ')}`
+        : directive;
+    })
+    .join('; ');
+}
+
+app.use((req, res, next) => {
+  res.setHeader('Content-Security-Policy', buildCSP(cspDirectives));
+  next();
+});
+```
+
+================================================================================
+## 4. CONSIDERAZIONI DI SICUREZZA
+================================================================================
+
+### 4.1 Rischi Identificati
+
+#### ALTO RISCHIO:
+- 'unsafe-inline' in script-src: Permette XSS via inline scripts
+- 'unsafe-eval': Permette eval() che può eseguire codice arbitrario
+- https: in img-src: Permette qualsiasi immagine HTTPS
+
+#### MITIGAZIONI ATTIVE:
+✓ Input sanitization con DOMPurify (server.js:54-67)
+✓ XSS protection headers (server.js:72-76)
+✓ CORS whitelist (server.js:20-37)
+✓ Rate limiting (server.js:42-51)
+✓ Content validation (server.js:110-153)
+
+### 4.2 Raccomandazioni per Produzione
+
+#### PRIORITY 1 - Rimuovere 'unsafe-inline' da script-src:
+1. Implementare nonces per script inline
+2. Usare hashes per script statici
+3. Refactorare event handlers inline
+
+Esempio con nonce:
+```javascript
+// Generare nonce per request
+const crypto = require('crypto');
+const nonce = crypto.randomBytes(16).toString('base64');
+
+// Nel CSP header
+script-src 'self' 'nonce-${nonce}';
+
+// Nell'HTML
+<script nonce="${nonce}">...</script>
+```
+
+#### PRIORITY 2 - Limitare img-src:
+- Specificare domini consentiti invece di https:
+- Esempio: img-src 'self' data: https://cdn.vantyx.ai
+
+#### PRIORITY 3 - Rimuovere 'unsafe-eval' se possibile:
+- Verificare se Vite HMR richiede davvero eval in produzione
+- In produzione build, 'unsafe-eval' potrebbe non essere necessario
+
+### 4.3 Testing della Policy
+
+#### Test CSP Violations in Development:
+```javascript
+// Aggiungere report-uri per monitorare violazioni
+app.use((req, res, next) => {
+  const csp = buildCSP(cspDirectives);
+  res.setHeader('Content-Security-Policy', csp);
+  // Report-Only mode per testing
+  res.setHeader('Content-Security-Policy-Report-Only', csp + '; report-uri /api/csp-report');
+  next();
+});
+
+// Endpoint per ricevere report
+app.post('/api/csp-report', express.json({type: 'application/csp-report'}), (req, res) => {
+  console.log('CSP Violation:', req.body);
+  res.status(204).end();
+});
+```
+
+================================================================================
+## 5. MONITORAGGIO E LOGGING
+================================================================================
+
+### 5.1 Metriche da Monitorare
+- Numero di violazioni CSP per tipo
+- User agents che generano violazioni
+- URL che causano violazioni
+- Domini bloccati più frequenti
+
+### 5.2 Report URI (opzionale)
+Per ambienti enterprise, configurare report-uri o report-to:
+
+```
+Content-Security-Policy:
+  ... tutte le direttive ...
+  report-uri /api/csp-violations;
+  report-to csp-endpoint;
+```
+
+Report-To header:
+```javascript
+res.setHeader('Report-To', JSON.stringify({
+  group: 'csp-endpoint',
+  max_age: 10886400,
+  endpoints: [{ url: '/api/csp-violations' }]
+}));
+```
+
+================================================================================
+## 6. COMPATIBILITÀ BROWSER
+================================================================================
+
+### Supporto CSP Level 3:
+✓ Chrome/Edge 90+
+✓ Firefox 88+
+✓ Safari 15.4+
+✓ Opera 76+
+
+### Fallback per browser legacy:
+- CSP Level 2 supportato da browser più vecchi
+- Direttive non supportate vengono ignorate silenziosamente
+- X-Frame-Options come fallback per frame-ancestors
+
+================================================================================
+## 7. CHANGELOG
+================================================================================
+
+### v1.0 - 2025-10-07
+- Initial CSP policy definition
+- Whitelisted OpenAI API (https://api.openai.com)
+- Whitelisted Anthropic API (https://api.anthropic.com)
+- Configured for React/Vite development environment
+- Documented all directives and security considerations
+- Included production hardening recommendations
+
+================================================================================
+## 8. RIFERIMENTI
+================================================================================
+
+### Documentazione:
+- MDN CSP: https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP
+- W3C CSP Level 3: https://www.w3.org/TR/CSP3/
+- OWASP CSP Cheat Sheet: https://cheatsheetseries.owasp.org/cheatsheets/Content_Security_Policy_Cheat_Sheet.html
+
+### Tools:
+- CSP Evaluator: https://csp-evaluator.withgoogle.com/
+- Report URI: https://report-uri.com/
+
+### API Endpoints Whitelisted:
+- OpenAI: https://api.openai.com
+- Anthropic: https://api.anthropic.com
+
+================================================================================
+## NOTE FINALI
+================================================================================
+
+Questa CSP è configurata per bilanciare:
+✓ Sicurezza contro XSS e code injection
+✓ Funzionalità del framework React/Vite
+✓ Integrazione con API esterne (OpenAI, Anthropic)
+✓ Sviluppo e debugging
+
+Per produzione, seguire le raccomandazioni nella sezione 4.2 per massimizzare
+la sicurezza rimuovendo 'unsafe-inline' e 'unsafe-eval'.
+
+================================================================================

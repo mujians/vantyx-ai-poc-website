@@ -1,0 +1,336 @@
+# VANTYX.AI - PIANO ARCHITETTURA SCALABILE
+## Piano per Future Evoluzioni e Aggiornamenti
+
+---
+
+## 1. ARCHITETTURA ATTUALE (POC)
+- JSON statico (`vantyx_content.json`) come fonte dati
+- System prompts OpenAI hardcoded
+- Gestione contenuti manuale
+- Nessuna ricerca semantica
+
+## 2. EVOLUZIONE FASE 1: VECTOR EMBEDDINGS
+
+### 2.1 Implementazione Vector Database
+**Tecnologie Consigliate:**
+- Pinecone / Weaviate / Qdrant per vector storage
+- OpenAI text-embedding-3-small/large per generazione embeddings
+
+**Architettura:**
+```
+vantyx_content.json →
+  Chunking Strategy →
+    Generate Embeddings →
+      Store in Vector DB (con metadata)
+```
+
+**Metadata Structure:**
+```json
+{
+  "id": "chunk_001",
+  "content": "texto del chunk",
+  "embedding": [0.123, -0.456, ...],
+  "metadata": {
+    "source_section": "features",
+    "subsection": "automation",
+    "page_reference": "p.5",
+    "keywords": ["AI", "automation"],
+    "timestamp": "2025-10-07"
+  }
+}
+```
+
+### 2.2 Chunking Strategy
+**Approccio Ibrido:**
+1. **Semantic Chunking**: Rispetta i confini delle sezioni JSON
+2. **Size-based**: Max 512 tokens per chunk con overlap di 50 tokens
+3. **Hierarchy-aware**: Preserva il contesto gerarchico
+
+**Implementazione:**
+```
+/src/utils/embedding-pipeline.ts
+  - chunkContent()
+  - generateEmbeddings()
+  - upsertToVectorDB()
+```
+
+### 2.3 Retrieval-Augmented Generation (RAG)
+**Pipeline di Query:**
+```
+User Query →
+  Embedding Query →
+    Similarity Search (top-k=5) →
+      Rerank →
+        Inject in System Prompt →
+          OpenAI Response
+```
+
+**Hybrid Search:**
+- Vector similarity (semantic)
+- Keyword matching (BM25)
+- Weighted fusion (70% vector + 30% keyword)
+
+---
+
+## 3. EVOLUZIONE FASE 2: HEADLESS CMS
+
+### 3.1 CMS Selection
+**Opzioni Raccomandate:**
+- **Sanity.io**: Ottimo per contenuti strutturati, real-time editing
+- **Strapi**: Self-hosted, full control, GraphQL support
+- **Contentful**: Enterprise-ready, multi-language
+
+**Criteri di Selezione:**
+- Webhooks per sync automatico
+- API GraphQL/REST robuste
+- Version control contenuti
+- Multi-language support
+
+### 3.2 Content Model nel CMS
+**Schema Proposto (Sanity Example):**
+```javascript
+// schemas/content.js
+{
+  name: 'vanyxContent',
+  type: 'document',
+  fields: [
+    {name: 'section', type: 'string'},
+    {name: 'subsection', type: 'string'},
+    {name: 'content', type: 'text'},
+    {name: 'metadata', type: 'object', fields: [
+      {name: 'keywords', type: 'array', of: [{type: 'string'}]},
+      {name: 'pageRef', type: 'string'},
+      {name: 'priority', type: 'number'}
+    ]},
+    {name: 'publishedAt', type: 'datetime'}
+  ]
+}
+```
+
+### 3.3 Sync Pipeline CMS → Vector DB
+**Architettura Event-Driven:**
+```
+CMS Webhook (onChange) →
+  API Endpoint (/api/sync-content) →
+    Validate Content →
+      Re-chunk & Re-embed →
+        Update Vector DB →
+          Invalidate Cache
+```
+
+**Implementazione:**
+```
+/api/webhooks/cms-sync.ts
+  - validatePayload()
+  - processContentUpdate()
+  - triggerReembedding()
+  - notifyCompletion()
+```
+
+---
+
+## 4. ARCHITETTURA FINALE INTEGRATA
+
+### 4.1 Stack Tecnologico
+```
+Frontend: Next.js/React
+├── API Routes: /api/*
+├── CMS Integration: Sanity/Strapi client
+└── Vector Search: Pinecone/Weaviate client
+
+Backend Services:
+├── Content Sync Service (Node.js/Python)
+├── Embedding Service (OpenAI API)
+└── Query Service (RAG pipeline)
+
+Data Layer:
+├── CMS (Sanity): Source of truth per contenuti
+├── Vector DB (Pinecone): Semantic search
+└── Cache (Redis): Query results & embeddings
+```
+
+### 4.2 Data Flow Completo
+```
+1. UPDATE FLOW:
+   Editor → CMS → Webhook → Sync Service →
+   Chunk → Embed → Vector DB → Cache Invalidation
+
+2. QUERY FLOW:
+   User → Frontend → API → Check Cache →
+   Vector Search → Rerank → Prompt Assembly →
+   OpenAI → Response → Cache Result
+```
+
+### 4.3 File Structure
+```
+/src
+  /services
+    /cms
+      - sanity.client.ts
+      - content.sync.ts
+    /vectordb
+      - pinecone.client.ts
+      - embedding.service.ts
+      - rag.pipeline.ts
+  /api
+    /webhooks
+      - cms-sync.ts
+    /query
+      - semantic-search.ts
+  /utils
+    - chunking.ts
+    - validation.ts
+  /config
+    - cms.config.ts
+    - vectordb.config.ts
+```
+
+---
+
+## 5. MIGRATION STRATEGY
+
+### 5.1 Phase 1: Vector DB (2-3 settimane)
+- [ ] Setup Pinecone/Weaviate account
+- [ ] Implementare chunking pipeline
+- [ ] Migrare vantyx_content.json → Vector DB
+- [ ] Implementare basic RAG in API
+- [ ] A/B testing vs static prompts
+
+### 5.2 Phase 2: CMS Integration (3-4 settimane)
+- [ ] Setup Sanity/Strapi instance
+- [ ] Definire content schema
+- [ ] Migrare JSON → CMS
+- [ ] Implementare webhook sync
+- [ ] Training per content editors
+
+### 5.3 Phase 3: Ottimizzazione (2 settimane)
+- [ ] Implementare caching layer (Redis)
+- [ ] Fine-tune chunking strategy
+- [ ] Ottimizzare retrieval (reranking)
+- [ ] Monitoring & logging (Sentry/DataDog)
+
+---
+
+## 6. CONSIDERAZIONI TECNICHE
+
+### 6.1 Performance
+- **Latency Target**: <500ms per query (p95)
+- **Caching Strategy**:
+  - L1: In-memory (query results, 5 min TTL)
+  - L2: Redis (embeddings, 1h TTL)
+- **Batch Processing**: Async re-embedding notturno
+
+### 6.2 Costi
+**Stimati Mensili (1000 query/day):**
+- Vector DB (Pinecone Starter): ~$70/month
+- OpenAI Embeddings: ~$10/month
+- OpenAI GPT-4: ~$150/month (variabile)
+- CMS (Sanity Growth): ~$99/month
+- **Totale**: ~$330/month
+
+### 6.3 Scalabilità
+- Horizontal scaling: API routes via serverless (Vercel/AWS Lambda)
+- Vector DB sharding: Per lingua/categoria
+- CDN caching: Cloudflare per static responses
+
+### 6.4 Security
+- API keys in environment variables
+- Webhook signature validation (HMAC)
+- Rate limiting (100 req/min per IP)
+- Content sanitization pre-embedding
+
+---
+
+## 7. MONITORING & MAINTENANCE
+
+### 7.1 KPIs da Tracciare
+- Query response time (p50, p95, p99)
+- Embedding generation time
+- Cache hit rate
+- CMS sync success rate
+- Vector DB similarity scores
+
+### 7.2 Alerts
+- Webhook failures (CMS → API)
+- Vector DB downtime
+- OpenAI API errors
+- Anomalous query patterns
+
+### 7.3 Backup & Recovery
+- Daily CMS backup
+- Vector DB snapshots (weekly)
+- Rollback procedure per bad content updates
+
+---
+
+## 8. ALTERNATIVE ARCHITETTURE
+
+### 8.1 Serverless-First (AWS)
+```
+API Gateway → Lambda Functions →
+  DynamoDB (metadata) +
+  OpenSearch (vector + keyword) +
+  S3 (embeddings backup)
+```
+
+### 8.2 Open Source Stack
+```
+Strapi (CMS) +
+Qdrant (vector DB) +
+PostgreSQL (metadata) +
+Redis (cache) +
+Self-hosted on DigitalOcean/Hetzner
+```
+
+### 8.3 All-in-One (Supabase)
+```
+Supabase:
+  - PostgreSQL + pgvector (vector search)
+  - Storage (files)
+  - Auth (se necessario)
+  - Realtime (live updates)
+```
+
+---
+
+## 9. IMPLEMENTAZIONE PRIORITARIA
+
+### Quick Wins (1-2 settimane):
+1. **Vector embeddings base**: Pinecone + OpenAI embeddings
+2. **RAG pipeline minimo**: Top-3 similarity search
+3. **Prove di performance**: A/B test vs static prompts
+
+### Medium-term (1-2 mesi):
+4. **CMS integration**: Sanity con webhook sync
+5. **Caching layer**: Redis per embeddings
+6. **Monitoring**: Basic logging e metrics
+
+### Long-term (3-6 mesi):
+7. **Advanced RAG**: Reranking, hybrid search
+8. **Multi-language**: Embeddings per lingua
+9. **Analytics**: Dashboard query insights
+
+---
+
+## 10. RISCHI E MITIGAZIONI
+
+| Rischio | Probabilità | Impatto | Mitigazione |
+|---------|-------------|---------|-------------|
+| Latency elevata query | Media | Alto | Aggressive caching + CDN |
+| Costi OpenAI inattesi | Alta | Medio | Rate limiting + budget alerts |
+| Drift semantico | Bassa | Alto | Periodic re-embedding + monitoring |
+| CMS data loss | Bassa | Critico | Daily backups + version control |
+
+---
+
+## CONCLUSIONE
+
+L'architettura proposta permette:
+✅ Aggiornamenti contenuti senza deploy (CMS)
+✅ Ricerca semantica avanzata (Vector DB)
+✅ Risposte contestualmente accurate (RAG)
+✅ Scalabilità orizzontale (Serverless)
+✅ Costi controllati (~$330/mese)
+
+**Next Step Raccomandato**: Iniziare con POC Vector Embeddings (Pinecone + OpenAI)
+per validare il miglioramento qualitativo delle risposte prima di investire in CMS.

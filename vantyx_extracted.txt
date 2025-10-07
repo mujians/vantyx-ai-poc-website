@@ -1,0 +1,215 @@
+vantyx.aiIl primo sistema operativo AI-Native per le aziende
+17 luglio 2025
+V1.3 1
+
+Il problema: entropia operativa
+Tutte le imprese sono soffocate da burocrazia e software frammentati.
+Gli strumenti esistenti sono rigidi, complessi e costosi.
+Le aziende oggi sono sommerse da software scollegati:
+- ERP, CRM, order entry, CPQ, MRP, time-sheet, etc…
+- Dati dispersi e spesso non affidabili
+- I dati nascono male: la BI diventa un’illusione
+Serve ripensare l’origine e il flusso di dati e informazioni aziendali
+Troppo tempo sprecato in micro-management e applicativi inefficienti e inefficaci
+17 luglio 2025
+V1.3 2
+
+La soluzione
+La tecnologia deve servire le persone, non il contrario
+Il cuore del sistema operativo AI Native di Vantyx ha la capacità di
+raccogliere e governare tutti i dati aziendali in modo completamente
+automatico e senza stravolgere l’ecosistema esistente.
+L’interazione avviene tramite un’unica interfaccia conversazionale
+multimodale.
+- Parli e scrivi, come con un collega -
+17 luglio 2025
+V1.3 3
+
+UX a zero frizione
+Non serve formazione, manuali o training
+Con Vantyx non impari a utilizzale l’ennesimo applicativo aziendale.
+Lo usi da subito.
+Lavori dove già sei.
+Puoi parlare con Vantyx direttamente da whatsapp, teams, slack, webapp
+“Zero frizione” significa poter ottenere ciò che ti serve senza dover
+imparare nulla di nuovo, semplicemente chiedendo e ricevendo subito
+il risultato.
+17 luglio 2025
+V1.3 3
+
+Brevetto DNA
+La svolta concettuale = salvare il significato di dati e informazioni, insieme
+Il mondo digitale non salva il senso delle cose. Salva solo ciò che può
+riprodurre. E lo dimentica quasi subito.
+Il formato .dna è il primo ecosistema semantico pensato per archiviare il significato, il
+contesto e l’intenzione dietro ogni evento umano o macchina-centrico: una struttura
+compatta e rigenerabile che trasforma esperienze in conoscenza attiva.
+Il .dna è la base per costruire agenti intelligenti, archivi cognitivi e memorie condivise tra
+persone e sistemi.
+.dna non richiede nuovi strumenti né nuove abitudini.
+Nasce da ciò che già fai: una mail, una riunione, un documento.
+Non devi imparare nulla di nuovo.
+Il futuro della memoria inizia qui.
+17 luglio 2025
+V1.3 3
+
+Concretamente:
+Dalla complessità operativa all’efficienza quotidiana
+Ogni funzione aziendale può essere digitalizzata, automatizzata e orchestrata tramite AI.
+Il risultato: meno clic, più valore.
+Esempi d’uso:
+- Report: “mostrami i clienti più profittevoli del trimestre”
+- Ordini: “inserisci ordine Rossi Srl da € 5.000 relativo al prodotto XY
+- Documenti: “prepare un’offerta commerciale per il prodotto Z alle condizioni A,B,C
+Vantyx semplifica attività operative, manageriali e decisionali
+17 luglio 2025
+V1.3 4
+
+Architettura:
+un ecosistema evolutivo e componibile
+Dal dato all’azione, tutto orchestrato da un’unica AI
+VectorDataHub: raccoglie e qualifica i dati
+Moduli integrati: attivabili in base alle esigenze
+Interfacce liquide: voce, testo, mobile
+Output: task automatizzati, insight, report
+Vantyx si basa su un VectorDataHub centrale e una rete di moduli AI-first che comunicano
+fra loro in tempo reale, con interfacce vocali, testuali e API.
+17 luglio 2025
+V1.3 5
+
+Ogni esigenza, un modulo.
+Una libreria di componenti intelligenti, integrabili e scalabili
+Amministrazione: Contabilità, Tesoreria, Fatturazione, PEC
+HR: Presenze, Ferie, Note Spese, Timesheet
+Vendite: CRM, CPQ, Order Entry
+Produzione: MRP, MES, PLM, WMS
+Supporto: Customer Care, Contratti, QMS, DMS
+BI: Report dinamici, Alert AI, Previsioni
+Ogni modulo nasce da un’esigenza reale vissuta in progetti concreti, ed è progettato per
+essere riutilizzato e aggiornato.
+17 luglio 2025
+V1.3 6
+
+Modello di Business
+Ogni modulo è un asset che finanzia la piattaforma
+Vantyx adotta un modello SaaS + RaaS, dove ogni progetto cliente genera asset
+riutilizzabili e accelera la crescita della piattaforma
+Formula:
+- Setup fee + SaaS annuale
+- Fee per personalizzazioni
+- RaaS: consumo effettivo risorse conteggiato ad azioni/conversazioni
+Benefici:
+- Cashflow immediato da progetti
+- Codice modulare → costi marginali in calo - Roadmap finanziata dal mercato
+17 luglio 2025
+V1.3 7
+
+Mercato: enorme e ancora frammentato
+Software gestionali per PMI: la prossima grande rivoluzione
+Le PMI sono il motore economico più trascurato nel software.
+Vantyx colma il gap con una soluzione leggera, potente e flessibile.
+Dati chiave:
+Mercato ERP: 148 mld $ globali | 70 mld € EU | 6 mld € Italia
+Target: 10–250 dipendenti
+Crescita: +9–10% annua | +30–40% full cloud
+Competitor: SAP, Oracle, MS Dynamics (rigidi, costosi, enterprise- only)
+17 luglio 2025
+V1.3 9
+
+Vantaggio competitivo
+Un sistema che si rafforza col tempo. Ogni progetto migliora la piattaforma
+Ogni modulo sviluppato con un cliente diventa patrimonio condiviso e riutilizzabile.
+Più progetti → meno costi → più efficienza
+Ogni commessa accelera la roadmap
+Codice progettato per essere componibile e scalabile
+Crescita capital-efficient, senza debito tecnico
+Portafoglio asset in continua espansione
+17 luglio 2025
+V1.3 8
+
+Founding Customer Club
+Co-creazione strutturata, non sviluppo su misura
+I primi clienti partecipano allo sviluppo dei moduli, con vantaggi economici e operativi,
+senza rinunciare alla standardizzazione del prodotto.
+Formula:
+- Contratto SaaS 3–5 anni scontato
+- Fee upfront come CAPEX per sviluppo prioritario
+- IP moduli resta di Vantyx
+- Label: "sviluppato insieme", non "custom"
+Vantaggi:
+- Finanziamento rapido
+- Roadmap validata
+- Codice standard
+- Upsell naturale
+17 luglio 2025
+V1.3 10
+
+Go-To-Market: low friction, crescita organica
+Entriamo con un modulo. Restiamo con una suite.
+Si parte da un problema concreto e urgente. Il cliente risolve, si fida, e attiva altri moduli.
+La suite cresce con lui, non sopra di lui.
+Ingresso con moduli verticali ad alto valore
+Espansione progressiva → fidelizzazione
+Customer Lifetime Value in crescita
+Costi di acquisizione contenuti
+17 luglio 2025
+V1.3 11
+
+Modello sostenibile:
+costruito per crescere in equilibrio
+Un sistema capital-efficient che scala senza bruciare risorse
+Ogni progetto cliente genera asset. Ogni asset accelera il successivo.
+La piattaforma si finanzia da sola, riducendo debito e rischi.
+- Marginalità migliorata a ogni modulo
+- Tempo di delivery ridotto
+- Break-even accelerato
+- Nessun capitale passivo necessario
+17 luglio 2025
+V1.3 12
+
+Exit strategy
+Due vie d’uscita. Una sola direzione: generare valore scalabile.
+Opzioni:
+Acquisizione da parte di big tech o software house
+IPO come piattaforma profittevole e scalabile
+Motivazioni:
+- Modularità AI-first
+- Codice riutilizzabile
+- Roadmap tracciabile
+- Business resiliente (prodotto + servizi)
+Una piattaforma pensata per diventare un asset di mercato
+17 luglio 2025
+V1.3 13
+
+Perché investire
+Una scommessa concreta su un mercato enorme
+Mercato in forte espansione
+Modello capital-efficient → break-even rapido
+Riutilizzo progressivo dei moduli
+Exit multipla possibile
+Non serve reinventare l’ERP. Serve riscriverlo per il mondo post-AI.
+17 luglio 2025
+V1.3 14
+
+Round Pre-seed
+Timing: chiusura raccolta entro ottobre 2025
+Obiettivi del round:
+- Committare il team iniziale (14 persone)
+- Avviare lo sviluppo della piattaforma
+- Accelerare go-to-market e delivery dei primi progetti
+Obiettivo raccolta € 500.000
+Valutazione post-money: €5.000.000 -> €50.000 = 1% equity
+17 luglio 2025
+V1.3 14
+
+Round Seed
+Timing: chiusura raccolta Q1-Q2 2026
+Obiettivi del round:
+- Garantire una valutazione fair per tutte le parti
+- Sostenere il go-to-market Italia
+- Attivare le prime iniziative di espansione internazionale
+Obiettivo raccolta: €1M – €3M
+Strumento: SFP (Strumenti Finanziari Partecipativi)
+17 luglio 2025
+V1.3 14
+

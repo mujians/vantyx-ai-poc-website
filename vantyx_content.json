@@ -1,0 +1,84 @@
+{
+  "topics": [
+    {
+      "title": "Il Problema: Entropia Operativa",
+      "description": "Le aziende oggi sono sommerse da software scollegati (ERP, CRM, CPQ, MRP) che generano dati dispersi e inaffidabili. Troppo tempo sprecato in micro-management e applicativi inefficienti.",
+      "keywords": ["entropia operativa", "software frammentati", "dati dispersi", "burocrazia", "micro-management", "ERP", "CRM", "inefficienza"]
+    },
+    {
+      "title": "La Soluzione: Sistema Operativo AI-Native",
+      "description": "Vantyx raccoglie e governa tutti i dati aziendali in modo automatico tramite un'unica interfaccia conversazionale multimodale. La tecnologia serve le persone, non il contrario.",
+      "keywords": ["AI-Native", "interfaccia conversazionale", "multimodale", "automazione", "governance dati", "zero frizione"]
+    },
+    {
+      "title": "UX a Zero Frizione",
+      "description": "Nessuna formazione richiesta. Vantyx si usa da subito, parlando e scrivendo come con un collega. Accessibile da WhatsApp, Teams, Slack, webapp.",
+      "keywords": ["zero frizione", "UX", "no training", "conversazionale", "WhatsApp", "Teams", "Slack", "usabilità"]
+    },
+    {
+      "title": "Brevetto DNA",
+      "description": "Il formato .dna salva il significato, il contesto e l'intenzione dietro ogni evento. Trasforma esperienze in conoscenza attiva per costruire agenti intelligenti e memorie condivise.",
+      "keywords": ["brevetto DNA", "formato .dna", "ecosistema semantico", "conoscenza attiva", "memoria condivisa", "significato", "contesto"]
+    },
+    {
+      "title": "Casi d'Uso Concreti",
+      "description": "Dalla complessità operativa all'efficienza quotidiana: report istantanei, inserimento ordini vocale, generazione documenti automatica. Meno clic, più valore.",
+      "keywords": ["casi d'uso", "report", "ordini", "documenti", "automazione", "efficienza", "produttività"]
+    },
+    {
+      "title": "Architettura Modulare",
+      "description": "VectorDataHub centrale con moduli AI-first integrabili: interfacce vocali, testuali e API. Dal dato all'azione, tutto orchestrato da un'unica AI.",
+      "keywords": ["architettura", "VectorDataHub", "moduli", "AI-first", "componibile", "scalabile", "API"]
+    },
+    {
+      "title": "Moduli Funzionali",
+      "description": "Libreria di componenti intelligenti per ogni esigenza: Amministrazione, HR, Vendite, Produzione, Supporto, BI. Ogni modulo nasce da esigenze reali.",
+      "keywords": ["moduli", "amministrazione", "HR", "vendite", "produzione", "CRM", "MRP", "BI", "timesheet"]
+    },
+    {
+      "title": "Modello di Business SaaS + RaaS",
+      "description": "Setup fee + SaaS annuale + RaaS basato su consumo effettivo. Ogni progetto cliente genera asset riutilizzabili e accelera la piattaforma.",
+      "keywords": ["SaaS", "RaaS", "business model", "setup fee", "cashflow", "codice modulare", "asset riutilizzabili"]
+    },
+    {
+      "title": "Mercato PMI",
+      "description": "Mercato ERP da 148 mld $ globali, 6 mld € in Italia. Target 10-250 dipendenti. Crescita +9-10% annua, +30-40% full cloud.",
+      "keywords": ["mercato PMI", "ERP", "148 miliardi", "Italia", "cloud", "crescita", "10-250 dipendenti"]
+    },
+    {
+      "title": "Vantaggio Competitivo",
+      "description": "Ogni modulo sviluppato diventa patrimonio riutilizzabile. Più progetti = meno costi. Crescita capital-efficient senza debito tecnico.",
+      "keywords": ["vantaggio competitivo", "riutilizzo", "capital-efficient", "scalabilità", "patrimonio condiviso", "efficienza"]
+    },
+    {
+      "title": "Founding Customer Club",
+      "description": "Co-creazione strutturata con i primi clienti. Contratti SaaS 3-5 anni scontati, fee upfront come CAPEX, IP resta di Vantyx.",
+      "keywords": ["founding customer", "co-creazione", "SaaS", "CAPEX", "IP", "validazione", "roadmap"]
+    },
+    {
+      "title": "Go-To-Market",
+      "description": "Ingresso con moduli verticali ad alto valore. Espansione progressiva per aumentare il Customer Lifetime Value con costi di acquisizione contenuti.",
+      "keywords": ["go-to-market", "moduli verticali", "espansione", "CLV", "fidelizzazione", "acquisizione"]
+    },
+    {
+      "title": "Sostenibilità del Modello",
+      "description": "Sistema capital-efficient che scala senza bruciare risorse. Ogni progetto genera asset che accelerano il successivo. Break-even accelerato.",
+      "keywords": ["sostenibilità", "capital-efficient", "break-even", "marginalità", "scalabilità", "rischio ridotto"]
+    },
+    {
+      "title": "Exit Strategy",
+      "description": "Due vie: acquisizione da big tech/software house o IPO. Piattaforma pensata come asset di mercato grazie a modularità AI-first e business resiliente.",
+      "keywords": ["exit strategy", "acquisizione", "IPO", "big tech", "asset di mercato", "scalabilità"]
+    },
+    {
+      "title": "Round Pre-seed",
+      "description": "Chiusura entro ottobre 2025. Obiettivo €500.000. Valutazione post-money €5M. Per committare team 14 persone e avviare sviluppo piattaforma.",
+      "keywords": ["pre-seed", "500K", "valutazione 5M", "team", "ottobre 2025", "sviluppo", "go-to-market"]
+    },
+    {
+      "title": "Round Seed",
+      "description": "Q1-Q2 2026. Obiettivo €1M-€3M tramite SFP. Per sostenere go-to-market Italia ed espansione internazionale.",
+      "keywords": ["seed", "1M-3M", "SFP", "2026", "Italia", "internazionale", "espansione"]
+    }
+  ]
+}

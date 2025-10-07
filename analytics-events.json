@@ -1,0 +1,55 @@
+{
+  "events": {
+    "pageViews": {
+      "name": "pageview",
+      "description": "Track page views automatically",
+      "implementation": "automatic",
+      "props": {
+        "path": "current page path",
+        "referrer": "document.referrer"
+      }
+    },
+    "conversationStarted": {
+      "name": "Conversation Started",
+      "description": "Track when a user initiates a conversation with the chatbot",
+      "implementation": "manual",
+      "trigger": "User sends first message or clicks start conversation",
+      "props": {
+        "conversationType": "initial|followup",
+        "userType": "new|returning",
+        "entryPoint": "homepage|product|pricing|other"
+      },
+      "code": "window.plausible('Conversation Started', { props: { conversationType, userType, entryPoint } })"
+    },
+    "conversationCompleted": {
+      "name": "Conversation Completed",
+      "description": "Track when a conversation is successfully completed",
+      "implementation": "manual",
+      "trigger": "User receives final response or closes conversation successfully",
+      "props": {
+        "messageCount": "number of messages exchanged",
+        "duration": "conversation duration in seconds",
+        "outcome": "resolved|unresolved|abandoned",
+        "category": "support|sales|general"
+      },
+      "code": "window.plausible('Conversation Completed', { props: { messageCount, duration, outcome, category } })"
+    }
+  },
+  "customProps": {
+    "conversationType": ["initial", "followup"],
+    "userType": ["new", "returning"],
+    "entryPoint": ["homepage", "product", "pricing", "other"],
+    "outcome": ["resolved", "unresolved", "abandoned"],
+    "category": ["support", "sales", "general"]
+  },
+  "goals": [
+    {
+      "name": "Conversation Started",
+      "description": "User initiates a conversation"
+    },
+    {
+      "name": "Conversation Completed",
+      "description": "User completes a conversation"
+    }
+  ]
+}

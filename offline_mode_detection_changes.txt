@@ -1,0 +1,303 @@
+================================================================================
+OFFLINE MODE DETECTION - MODIFICHE IMPLEMENTATE
+================================================================================
+
+Data implementazione: 2025-10-07
+Task: Micro-Task 9/9 - Implementa rilevamento modalità offline e messaggi di fallback
+
+================================================================================
+PANORAMICA
+================================================================================
+
+Implementazione completa del rilevamento della modalità offline con:
+- Hook personalizzato per monitorare lo stato della connessione
+- Banner UI per informare l'utente dello stato offline/online
+- Controlli preventivi nelle chiamate API
+- Messaggi di errore specifici per lo stato offline
+- Gestione della riconnessione
+
+================================================================================
+FILE CREATI
+================================================================================
+
+1. src/hooks/useOffline.ts
+   - Hook React per rilevare lo stato offline/online
+   - Utilizza navigator.onLine e gli eventi 'online'/'offline'
+   - Traccia se l'utente era offline (wasOffline) per mostrare messaggi di riconnessione
+   - Auto-reset del flag wasOffline dopo 5 secondi
+
+   Interfaccia:
+   ```typescript
+   export interface UseOfflineReturn {
+     isOffline: boolean;      // Stato corrente offline
+     wasOffline: boolean;     // Indica se l'utente era recentemente offline
+   }
+   ```
+
+2. src/components/ui/OfflineBanner.tsx
+   - Componente banner per visualizzare lo stato della connessione
+   - Mostra banner rosso quando offline con messaggio appropriato
+   - Mostra banner verde quando riconnesso (per 5 secondi)
+   - Include icone SVG per migliorare l'UX
+   - Accessibile (role="alert", aria-live="assertive")
+   - Posizione fissa in alto (z-50) per massima visibilità
+   - Transizioni smooth con Tailwind CSS
+
+   Stati gestiti:
+   - Offline: "Nessuna connessione Internet. Alcune funzionalità potrebbero non essere disponibili."
+   - Riconnesso: "Connessione ripristinata!"
+
+================================================================================
+FILE MODIFICATI
+================================================================================
+
+1. src/App.tsx (linee 1-50)
+
+   Modifiche effettuate:
+   - Importato useOffline hook
+   - Importato OfflineBanner component
+   - Integrato hook nella MainContent: const { isOffline, wasOffline } = useOffline();
+   - Aggiunto OfflineBanner component in cima alla UI
+
+   Nuova struttura:
+   ```tsx
+   function MainContent() {
+     const { isOffline, wasOffline } = useOffline();
+     return (
+       <>
+         <OfflineBanner isOffline={isOffline} wasOffline={wasOffline} />
+         {/* Resto del contenuto */}
+       </>
+     );
+   }
+   ```
+
+2. src/hooks/useChat.ts (linee 149-155)
+
+   Modifiche effettuate:
+   - Aggiunto controllo preventivo dello stato online prima delle richieste API
+   - Utilizzo di navigator.onLine per verificare la connessione
+   - Generazione di errore user-friendly se offline
+
+   Logica implementata (linea 149-155):
+   ```typescript
+   const attemptFetch = async (retryCount = 0): Promise<void> => {
+     try {
+       // Check if user is offline before attempting request
+       if (!navigator.onLine) {
+         const errorDetails = createUserFriendlyError('Nessuna connessione Internet disponibile');
+         throw new Error(formatErrorMessage(errorDetails));
+       }
+       // ... resto del codice
+   ```
+
+3. src/utils/errorMessages.ts
+
+   Modifiche effettuate:
+
+   a) Aggiunto nuovo errore NetworkErrors.OFFLINE (linee 37-41):
+   ```typescript
+   OFFLINE: {
+     userMessage: 'Nessuna connessione Internet disponibile.',
+     suggestedAction: 'Verifica la tua connessione e riprova',
+     errorCode: 'NET_005'
+   }
+   ```
+
+   b) Aggiornata funzione mapServerError (linee 154-156):
+   - Aggiunto controllo prioritario per messaggi offline
+   - Pattern matching: 'offline' o 'nessuna connessione internet'
+   - Restituzione di NetworkErrors.OFFLINE
+
+   Logica aggiornata:
+   ```typescript
+   if (lowerMessage.includes('offline') || lowerMessage.includes('nessuna connessione internet')) {
+     return NetworkErrors.OFFLINE;
+   }
+   ```
+
+================================================================================
+FUNZIONALITÀ IMPLEMENTATE
+================================================================================
+
+1. RILEVAMENTO STATO OFFLINE
+   - Monitoraggio continuo tramite eventi browser
+   - Reattività immediata ai cambiamenti di connessione
+   - Supporto per tutti i browser moderni
+
+2. NOTIFICHE UTENTE
+   - Banner visibile in cima alla pagina
+   - Messaggi contestuali (offline vs riconnesso)
+   - Icone appropriate per migliorare la comprensione
+   - Auto-dismissal del messaggio di riconnessione dopo 5 secondi
+
+3. PREVENZIONE RICHIESTE API
+   - Controllo preventivo prima di ogni chiamata API
+   - Risparmio di tentativi inutili quando offline
+   - Messaggio di errore specifico e chiaro
+
+4. GESTIONE ERRORI OFFLINE
+   - Errore dedicato con codice NET_005
+   - Messaggio user-friendly
+   - Suggerimenti di azione chiari
+
+5. ACCESSIBILITÀ
+   - ARIA roles e live regions per screen readers
+   - Contrasto colori adeguato (rosso per offline, verde per riconnesso)
+   - Icone con significato visivo chiaro
+
+================================================================================
+BENEFICI PER L'UTENTE
+================================================================================
+
+1. Feedback Immediato
+   - L'utente sa immediatamente quando perde la connessione
+   - Evita frustrazione da richieste fallite senza spiegazione
+
+2. Trasparenza
+   - Chiarezza sullo stato della connessione
+   - Messaggi espliciti su cosa sta succedendo
+
+3. Esperienza Ottimizzata
+   - Nessun tentativo di richiesta quando offline
+   - Risposta rapida al ripristino della connessione
+   - Notifica positiva di riconnessione
+
+4. Accessibilità
+   - Utenti con screen reader informati dello stato
+   - Visibilità massima del banner
+
+================================================================================
+FLUSSO DI FUNZIONAMENTO
+================================================================================
+
+SCENARIO 1: Utente va offline durante l'utilizzo
+1. Browser rileva perdita connessione (evento 'offline')
+2. useOffline hook aggiorna isOffline a true
+3. OfflineBanner mostra banner rosso
+4. Utente vede: "Nessuna connessione Internet. Alcune funzionalità potrebbero non essere disponibili."
+5. Se tenta di inviare un messaggio chat:
+   - useChat controlla navigator.onLine
+   - Trova offline = true
+   - Genera errore con NetworkErrors.OFFLINE
+   - Mostra messaggio: "Nessuna connessione Internet disponibile. Verifica la tua connessione e riprova."
+
+SCENARIO 2: Utente si riconnette
+1. Browser rileva ripristino connessione (evento 'online')
+2. useOffline hook aggiorna isOffline a false e wasOffline a true
+3. OfflineBanner mostra banner verde
+4. Utente vede: "Connessione ripristinata!"
+5. Dopo 5 secondi, banner scompare automaticamente
+6. Chiamate API funzionano normalmente
+
+SCENARIO 3: Utente già offline all'avvio
+1. useOffline inizializza con !navigator.onLine
+2. Se offline, banner appare immediatamente
+3. Utente consapevole dello stato prima di tentare azioni
+
+================================================================================
+CONSIDERAZIONI TECNICHE
+================================================================================
+
+1. COMPATIBILITÀ BROWSER
+   - navigator.onLine supportato da tutti i browser moderni
+   - Eventi online/offline standard W3C
+   - Fallback graceful se API non disponibile
+
+2. PERFORMANCE
+   - Hook leggero con cleanup appropriato
+   - Event listeners rimossi al dismount
+   - Nessun polling continuo (event-driven)
+
+3. STATE MANAGEMENT
+   - Gestione locale dello stato offline (no store globale necessario)
+   - wasOffline flag per transizioni
+   - Auto-cleanup del flag dopo timeout
+
+4. SICUREZZA
+   - Nessun dato sensibile esposto
+   - Solo stato di connessione browser
+
+================================================================================
+INTEGRAZIONE CON ALTRI SISTEMI
+================================================================================
+
+1. Error Messages System
+   - NetworkErrors.OFFLINE integrato nel sistema esistente
+   - Compatibile con formatErrorMessage e createUserFriendlyError
+   - Codice errore univoco: NET_005
+
+2. Chat System
+   - Integrato in useChat hook
+   - Previene richieste API quando offline
+   - Utilizza gli stessi meccanismi di gestione errori
+
+3. UI Components
+   - OfflineBanner si integra con layout esistente
+   - z-index appropriato per non coprire modal critici
+   - Styling consistente con design system Tailwind
+
+4. Sentry Integration
+   - Errori offline possono essere tracciati se necessario
+   - Distinzione chiara tramite errorCode
+
+================================================================================
+TEST CONSIGLIATI
+================================================================================
+
+1. Test Manuale
+   - Disabilitare WiFi durante l'utilizzo
+   - Verificare apparizione banner rosso
+   - Tentare invio messaggio chat → deve mostrare errore offline
+   - Riabilitare WiFi
+   - Verificare apparizione banner verde
+   - Verificare scomparsa banner dopo 5 secondi
+
+2. Test Browser DevTools
+   - Chrome DevTools → Network → Offline preset
+   - Verificare comportamento in diverse condizioni di rete
+
+3. Test Scenari Edge
+   - Connessione intermittente (on/off rapido)
+   - Cambio da WiFi a mobile data
+   - Connessione lenta vs offline
+
+================================================================================
+FUTURE ENHANCEMENTS (OPZIONALE)
+================================================================================
+
+1. Service Worker per Offline Support
+   - Cache delle risorse statiche
+   - Funzionalità limitate anche offline
+
+2. Retry Automatico al Ripristino
+   - Riprova automaticamente richieste fallite quando online
+
+3. Queue di Richieste Offline
+   - Salva richieste fatte offline
+   - Invio automatico quando riconnesso
+
+4. Indicatore Stato nell'UI
+   - Icona permanente invece che solo banner
+   - Differenziazione connessione lenta vs offline
+
+================================================================================
+CONCLUSIONE
+================================================================================
+
+✅ Rilevamento offline implementato con successo
+✅ UI feedback chiaro e accessibile
+✅ Prevenzione richieste API quando offline
+✅ Messaggi di errore user-friendly
+✅ Gestione riconnessione fluida
+✅ Integrazione completa con sistemi esistenti
+
+Il sistema è pronto per l'uso e fornisce un'esperienza utente ottimale anche
+in condizioni di connettività variabile.
+
+Riferimenti codice principali:
+- src/hooks/useOffline.ts (hook principale)
+- src/components/ui/OfflineBanner.tsx (componente UI)
+- src/App.tsx:12,19 (integrazione)
+- src/hooks/useChat.ts:152-155 (controllo preventivo)
+- src/utils/errorMessages.ts:37-41,154-156 (gestione errori)

@@ -1,0 +1,305 @@
+LOAD TESTING REPORT - ARTILLERY
+================================
+
+Test Date: 2025-10-07
+Test ID: t9nmd_8t89rx77xjcbee4zknt4a3nq339ef_dqnp
+Target: http://localhost:5000
+Total Test Duration: 7 minutes, 8 seconds (428 seconds)
+
+EXECUTIVE SUMMARY
+-----------------
+Load test executed with Artillery to simulate up to 100 concurrent users across multiple scenarios.
+The test revealed significant issues with the application's ability to handle high concurrent load.
+
+TEST CONFIGURATION
+------------------
+Phases:
+1. Warm up: 60s @ 10 users/sec arrival rate
+2. Ramp up: 120s @ 50 users/sec arrival rate
+3. Sustained load: 180s @ 100 users/sec arrival rate (peak load)
+4. Cool down: 60s @ 20 users/sec arrival rate
+
+Test Scenarios (weighted):
+- Homepage Visit (30%): Simple homepage access with 2s think time
+- Navigation Flow (25%): Multi-page navigation through features, benefits, contact
+- Static Assets Loading (20%): Homepage + CSS + JS asset loading
+- API Interaction (15%): POST requests to /api/contact endpoint
+- Heavy User Session (10%): Complex flow with multiple page visits and API calls
+
+OVERALL RESULTS
+---------------
+Total Users Created: 25,800
+Users Completed: 9,467 (36.7%)
+Users Failed: 16,333 (63.3%) ⚠️ CRITICAL
+
+Total HTTP Requests: 47,936
+Successful Responses: 35,776 (74.6%)
+Connection Resets (ECONNRESET): 12,160 (25.4%) ⚠️ CRITICAL
+Failed Captures: 4,173
+
+HTTP RESPONSE ANALYSIS
+----------------------
+HTTP 403 Forbidden: 35,776 (100% of responses) ⚠️ CRITICAL ISSUE
+- All successful responses returned 403 status code
+- Indicates authentication/authorization blocking all requests
+- No HTTP 200 responses recorded
+
+Downloaded Bytes: 0 (confirms 403 errors with no content)
+
+PERFORMANCE METRICS
+-------------------
+Request Rate: 114 requests/sec (average)
+Peak Request Rate: ~169 requests/sec (during sustained load phase)
+
+Response Times (milliseconds):
+- Minimum: 0ms
+- Maximum: 14ms
+- Mean: 0.7ms
+- Median: 1ms
+- 95th percentile (p95): 2ms
+- 99th percentile (p99): 3ms
+
+Session Length (milliseconds):
+- Minimum: 1,001ms
+- Maximum: 7,039ms
+- Mean: 3,863ms
+- Median: 5,944ms
+- 95th percentile: 6,976ms
+- 99th percentile: 6,976ms
+
+PHASE-BY-PHASE BREAKDOWN
+------------------------
+
+Phase 1: Warm Up (60s, 10 users/sec)
+- Users created: 571
+- Users completed: 220 (38.5%)
+- Users failed: 148 (25.9%)
+- Request rate: ~25-32/sec
+- Response time mean: 0.6-1.1ms
+- Primary errors: Failed capture/match (26-35 per period)
+
+Phase 2: Ramp Up (120s, 50 users/sec)
+- Users created: 4,996
+- Users completed: ~2,800 (56%)
+- Users failed: ~2,200 (44%)
+- Request rate: 91-119/sec
+- Response time mean: 0.7-0.9ms
+- Errors increased significantly:
+  * ECONNRESET errors: 79-141 per period
+  * Failed captures: 103-143 per period
+
+Phase 3: Sustained Load (180s, 100 users/sec) ⚠️ WORST PERFORMANCE
+- Users created: 18,000
+- Users completed: ~5,000 (27.8%)
+- Users failed: ~13,000 (72.2%) ⚠️ CRITICAL
+- Request rate: 156-169/sec (peak load)
+- Response time mean: 0.5-0.6ms
+- Critical error rates:
+  * ECONNRESET errors: 477-630 per period ⚠️
+  * Failed captures: 96-139 per period
+  * Server unable to maintain connections under sustained load
+
+Phase 4: Cool Down (60s, 20 users/sec)
+- Users created: 1,257
+- Users completed: 1,103 (87.7%) ✓ Recovery observed
+- Users failed: 269 (21.4%)
+- Request rate: 31-55/sec
+- Response time mean: 1.0ms
+- Errors decreased significantly:
+  * ECONNRESET errors: 0-145 per period
+  * System recovering as load decreased
+
+CRITICAL ISSUES IDENTIFIED
+---------------------------
+
+1. HTTP 403 FORBIDDEN - BLOCKING ALL REQUESTS ⚠️⚠️⚠️
+   Severity: CRITICAL
+   Impact: 100% of responses are 403 Forbidden
+   Root Cause: Possible causes:
+   - CORS policy blocking requests
+   - Missing authentication/authorization
+   - IP-based rate limiting or firewall rules
+   - Web server misconfiguration
+   Recommendation: Immediate investigation required. Check:
+   - CORS headers configuration
+   - Authentication middleware
+   - Server access logs
+   - Firewall/security rules
+
+2. HIGH CONNECTION RESET RATE (ECONNRESET) ⚠️⚠️
+   Severity: CRITICAL
+   Impact: 25.4% of all requests (12,160 out of 47,936)
+   Peak: During sustained load phase (600+ per 10-second period)
+   Root Cause: Server unable to handle connection volume
+   Symptoms:
+   - Server closing connections prematurely
+   - Resource exhaustion (file descriptors, memory, CPU)
+   - Connection pool limits exceeded
+   Recommendation:
+   - Increase server connection limits
+   - Optimize connection pooling
+   - Scale infrastructure (horizontal scaling)
+   - Implement load balancing
+
+3. HIGH USER FAILURE RATE ⚠️
+   Severity: CRITICAL
+   Impact: 63.3% of users failed to complete sessions
+   Pattern: Failure rate increases with load
+   - Warm up: ~26% failure
+   - Ramp up: ~44% failure
+   - Sustained: ~72% failure ⚠️
+   - Cool down: ~21% (recovery)
+   Recommendation:
+   - Address root causes (403 errors, connection resets)
+   - Implement graceful degradation
+   - Add circuit breakers and retry logic
+
+POSITIVE OBSERVATIONS
+---------------------
+1. Response Time: Consistently fast (mean 0.7ms, p95 2ms)
+   - When connections succeed, response is immediate
+   - Indicates efficient code execution path
+
+2. Recovery Capability: System recovers when load decreases
+   - Cool down phase shows 87.7% completion rate
+   - Demonstrates system not permanently damaged
+
+3. Stability Under Low Load: Performs acceptably at <30 req/sec
+   - Warm-up phase relatively stable
+   - Suitable for low-traffic scenarios
+
+CAPACITY ANALYSIS
+-----------------
+Current Capacity: ~30-50 concurrent users (estimated)
+Target Capacity: 100 concurrent users
+Gap: System fails at ~2x current capacity
+
+Bottlenecks Identified:
+1. Connection handling capacity
+2. Authorization/authentication layer (403 errors)
+3. Resource limits (connection pool, file descriptors)
+
+RECOMMENDATIONS
+---------------
+
+IMMEDIATE (P0 - Critical):
+1. Fix HTTP 403 blocking issue
+   - Review and update CORS configuration
+   - Verify authentication/authorization logic
+   - Check server access control lists
+
+2. Investigate ECONNRESET errors
+   - Review server logs for stack traces
+   - Monitor system resources (CPU, memory, connections)
+   - Check application server configuration
+
+SHORT-TERM (P1 - High Priority):
+3. Increase connection limits
+   - OS-level: ulimit settings
+   - Application-level: connection pool size
+   - Web server: max connections, workers
+
+4. Implement rate limiting
+   - Protect against resource exhaustion
+   - Return proper 429 responses instead of connection resets
+
+5. Add monitoring and alerting
+   - Track ECONNRESET rates
+   - Monitor connection pool usage
+   - Alert on high error rates
+
+MEDIUM-TERM (P2 - Medium Priority):
+6. Horizontal scaling
+   - Deploy multiple application instances
+   - Implement load balancing
+   - Consider containerization (Docker/Kubernetes)
+
+7. Connection pooling optimization
+   - Tune pool sizes
+   - Implement connection recycling
+   - Add connection health checks
+
+8. Caching strategy
+   - Implement CDN for static assets
+   - Add application-level caching
+   - Use HTTP caching headers
+
+LONG-TERM (P3 - Enhancement):
+9. Architecture review
+   - Consider microservices for heavy endpoints
+   - Implement message queues for async processing
+   - Database connection pooling optimization
+
+10. Performance testing pipeline
+    - Integrate load testing in CI/CD
+    - Establish performance baselines
+    - Regular regression testing
+
+SCENARIO PERFORMANCE BREAKDOWN
+------------------------------
+Homepage Visit (30% weight):
+- Users created: 7,784
+- Mix of simple GET requests
+- Most affected by 403 errors
+
+Navigation Flow (25% weight):
+- Users created: 6,563
+- Multiple page transitions
+- Higher session length due to think times
+
+Static Assets Loading (20% weight):
+- Users created: 5,016
+- Tests asset delivery capability
+- All assets returned 403
+
+API Interaction (15% weight):
+- Users created: 3,851
+- POST requests to /api/contact
+- Critical for user engagement features
+
+Heavy User Session (10% weight):
+- Users created: 2,586
+- Most complex scenario
+- Highest failure rate during sustained load
+
+CONCLUSION
+----------
+The application FAILS to meet the 100 concurrent user requirement under current configuration.
+
+Key Findings:
+✗ 100% of responses return HTTP 403 Forbidden
+✗ 63.3% user failure rate overall
+✗ 72.2% failure rate under sustained load
+✗ 25.4% connection reset rate
+✓ Fast response times when connections succeed (0.7ms mean)
+✓ System recovers when load decreases
+
+Critical Path Forward:
+1. Resolve HTTP 403 blocking issue (IMMEDIATE)
+2. Fix connection reset errors (IMMEDIATE)
+3. Increase system capacity to handle 100+ concurrent users
+4. Implement proper error handling and graceful degradation
+
+Estimated Effort to Production-Ready:
+- Fixing 403 errors: 2-4 hours
+- Connection handling: 1-2 days
+- Scaling infrastructure: 1-2 weeks
+- Full production hardening: 2-4 weeks
+
+Test Artifacts:
+- Configuration: artillery.yml
+- Processor: artillery-processor.cjs
+- Raw results: artillery-results.json
+- Full output: artillery-output.txt
+
+NEXT STEPS
+----------
+1. Review server logs during test window (04:13-04:20)
+2. Analyze 403 error root cause
+3. Run test against staging environment with proper authentication
+4. Implement fixes for identified issues
+5. Re-run load test to validate improvements
+6. Establish performance monitoring in production
+
+Report Generated: 2025-10-07
+Prepared by: Artillery Load Testing Framework

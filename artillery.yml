@@ -1,0 +1,92 @@
+config:
+  target: "http://localhost:5000"
+  phases:
+    - duration: 60
+      arrivalRate: 10
+      name: "Warm up"
+    - duration: 120
+      arrivalRate: 50
+      name: "Ramp up to 100 users"
+    - duration: 180
+      arrivalRate: 100
+      name: "Sustained load - 100 concurrent users"
+    - duration: 60
+      arrivalRate: 20
+      name: "Cool down"
+  http:
+    timeout: 30
+  processor: "./artillery-processor.cjs"
+
+scenarios:
+  - name: "Homepage Visit"
+    weight: 30
+    flow:
+      - get:
+          url: "/"
+          capture:
+            - json: "$"
+              as: "homepage"
+      - think: 2
+
+  - name: "Navigation Flow"
+    weight: 25
+    flow:
+      - get:
+          url: "/"
+      - think: 1
+      - get:
+          url: "/#features"
+      - think: 2
+      - get:
+          url: "/#benefits"
+      - think: 2
+      - get:
+          url: "/#contact"
+      - think: 1
+
+  - name: "Static Assets Loading"
+    weight: 20
+    flow:
+      - get:
+          url: "/"
+      - get:
+          url: "/assets/index.css"
+      - get:
+          url: "/assets/index.js"
+      - think: 1
+
+  - name: "API Interaction"
+    weight: 15
+    flow:
+      - post:
+          url: "/api/contact"
+          json:
+            name: "Load Test User {{ $randomNumber() }}"
+            email: "loadtest{{ $randomNumber() }}@example.com"
+            message: "This is a load testing message"
+      - think: 2
+
+  - name: "Heavy User Session"
+    weight: 10
+    flow:
+      - get:
+          url: "/"
+      - think: 1
+      - get:
+          url: "/#features"
+      - think: 2
+      - get:
+          url: "/#benefits"
+      - think: 1
+      - get:
+          url: "/#pricing"
+      - think: 2
+      - post:
+          url: "/api/contact"
+          json:
+            name: "Heavy User {{ $randomNumber() }}"
+            email: "heavy{{ $randomNumber() }}@example.com"
+            message: "Message from heavy usage scenario"
+      - think: 1
+      - get:
+          url: "/#contact"

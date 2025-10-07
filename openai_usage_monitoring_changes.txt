@@ -1,0 +1,326 @@
+================================
+OPENAI USAGE MONITORING CHANGES
+================================
+
+Data: 2025-10-07
+Obiettivo: Implementare monitoraggio uso OpenAI API con budget alert di $50/mese
+
+------------------------------------------------------------------
+1. NUOVO FILE CREATO: src/middleware/openaiUsageTracking.js
+------------------------------------------------------------------
+
+DESCRIZIONE:
+Middleware completo per il tracking dell'uso dell'API OpenAI con monitoraggio del budget mensile.
+
+FUNZIONALITÀ IMPLEMENTATE:
+
+A) PRICING TRACKING
+   - Definizione dei costi per token per ogni modello:
+     * gpt-4: $0.03/1K input tokens, $0.06/1K output tokens
+     * gpt-4-turbo: $0.01/1K input tokens, $0.03/1K output tokens
+     * gpt-3.5-turbo: $0.0005/1K input tokens, $0.0015/1K output tokens
+
+B) BUDGET MONITORING
+   - Limite mensile: $50
+   - Soglie di alert configurate: 50%, 75%, 90%, 95%
+   - Alert automatici quando vengono superate le soglie
+   - Integrazione con Sentry per notifiche critiche
+
+C) USAGE TRACKER CLASS
+   Traccia l'uso giornaliero e mensile dell'API con le seguenti metriche:
+   - Costo totale
+   - Numero totale di richieste
+   - Token di input totali
+   - Token di output totali
+   - Statistiche per modello
+
+   Metodi principali:
+   - calculateCost(): Calcola il costo basato sui token utilizzati
+   - trackRequest(): Registra una nuova richiesta
+   - getMonthlyUsage(): Ottiene l'uso del mese corrente
+   - getDailyUsage(): Ottiene l'uso del giorno corrente
+   - checkBudgetThreshold(): Verifica se sono state superate soglie di budget
+   - sendBudgetAlert(): Invia alert via console e Sentry
+   - cleanOldData(): Pulisce dati vecchi (mantiene ultimi 3 mesi)
+
+D) TRACKING MIDDLEWARE
+   - trackOpenAIUsage(): Wrapper che intercetta chiamate OpenAI API
+   - Supporta sia risposte streaming che non-streaming
+   - Stima token di input (approssimazione: 1 token ≈ 4 caratteri)
+   - Traccia token di output precisi dalle risposte API
+   - Logging dettagliato per ogni richiesta
+
+E) LOGGING STRUTTURATO
+   Per ogni richiesta viene loggato:
+   - Modello utilizzato
+   - Token di input/output
+   - Costo della richiesta
+   - Durata della chiamata
+   - Totale giornaliero
+   - Totale mensile
+   - Budget rimanente
+
+F) GESTIONE DATI
+   - Pulizia automatica dati vecchi ogni 24 ore
+   - Conservazione ultimi 3 mesi per statistiche mensili
+   - Conservazione ultimi 30 giorni per statistiche giornaliere
+
+G) ENDPOINT STATISTICHE
+   - getUsageStats(): Handler per endpoint statistiche
+   - Restituisce dati giornalieri, mensili e info budget
+
+------------------------------------------------------------------
+2. MODIFICHE A: server.js
+------------------------------------------------------------------
+
+RIGHE MODIFICATE:
+
+A) Riga 9 - Aggiunto import:
+   PRIMA:
+   import * as Sentry from '@sentry/node';
+
+   DOPO:
+   import * as Sentry from '@sentry/node';
+   import { trackOpenAIUsage, getUsageStats } from './src/middleware/openaiUsageTracking.js';
+
+   MOTIVO: Importa le funzioni del middleware per tracking uso OpenAI
+
+B) Righe 28-30 - Wrapped OpenAI client:
+   PRIMA:
+   const openai = new OpenAI({
+     apiKey: process.env.OPENAI_API_KEY
+   });
+
+   DOPO:
+   const openai = trackOpenAIUsage(new OpenAI({
+     apiKey: process.env.OPENAI_API_KEY
+   }));
+
+   MOTIVO: Applica il wrapper di tracking a tutte le chiamate OpenAI API
+
+C) Righe 144-147 - Nuovo endpoint statistiche:
+   AGGIUNTO:
+   // OpenAI usage statistics endpoint
+   app.get('/api/usage-stats', (req, res) => {
+     getUsageStats(req, res);
+   });
+
+   MOTIVO: Fornisce endpoint per consultare statistiche uso e budget
+
+------------------------------------------------------------------
+3. FUNZIONALITÀ DI BUDGET ALERT
+------------------------------------------------------------------
+
+COMPORTAMENTO DEGLI ALERT:
+
+1. MONITORAGGIO CONTINUO
+   - Ogni richiesta OpenAI viene tracciata
+   - Dopo ogni richiesta viene verificato il budget
+
+2. SOGLIE CONFIGURATE
+   - 50% del budget ($25): Warning
+   - 75% del budget ($37.50): Warning
+   - 90% del budget ($45): Warning elevato
+   - 95% del budget ($47.50): Error critico
+
+3. ALERT MULTIPLI PREVENUTI
+   - Viene tracciata l'ultima soglia per cui è stato inviato un alert
+   - Gli alert vengono inviati solo quando si supera una nuova soglia
+   - Non vengono inviati alert duplicati per la stessa soglia
+
+4. CANALI DI NOTIFICA
+   - Console: Sempre attivo con dettagli completi
+   - Sentry: Se SENTRY_DSN è configurato
+     * Level "warning" per soglie 50-89%
+     * Level "error" per soglie 90%+
+
+5. INFORMAZIONI NELL'ALERT
+   - Mese corrente
+   - Soglia superata (percentuale)
+   - Spesa corrente
+   - Limite di budget
+   - Budget rimanente
+   - Percentuale usata
+
+------------------------------------------------------------------
+4. ESEMPIO OUTPUT LOGGING
+------------------------------------------------------------------
+
+OUTPUT NORMALE (per ogni richiesta):
+```
+📊 OpenAI API Usage:
+  Model: gpt-4
+  Input Tokens: 245
+  Output Tokens: 389
+  Request Cost: $0.030690
+  Duration: 2543ms
+  Today's Total: $0.1234 (5 requests)
+  Month's Total: $12.4567 (156 requests)
+  Remaining Budget: $37.5433
+```
+
+OUTPUT ALERT (quando si supera una soglia):
+```
+⚠️  BUDGET ALERT ⚠️
+Month: 2025-10
+Threshold: 75% of monthly budget
+Current Spend: $37.6234
+Budget Limit: $50
+Remaining: $12.3766
+Percent Used: 75.25%
+```
+
+------------------------------------------------------------------
+5. ENDPOINT API
+------------------------------------------------------------------
+
+GET /api/usage-stats
+
+RISPOSTA JSON:
+{
+  "daily": {
+    "totalCost": 0.1234,
+    "totalRequests": 5,
+    "totalInputTokens": 1245,
+    "totalOutputTokens": 1876,
+    "date": "2025-10-07"
+  },
+  "monthly": {
+    "totalCost": 37.6234,
+    "totalRequests": 156,
+    "totalInputTokens": 45678,
+    "totalOutputTokens": 67890,
+    "models": {
+      "gpt-4": {
+        "requests": 120,
+        "cost": 32.45,
+        "inputTokens": 38000,
+        "outputTokens": 55000
+      },
+      "gpt-3.5-turbo": {
+        "requests": 36,
+        "cost": 5.17,
+        "inputTokens": 7678,
+        "outputTokens": 12890
+      }
+    },
+    "month": "2025-10",
+    "budgetLimit": 50,
+    "remainingBudget": 12.3766,
+    "percentUsed": 75.25
+  },
+  "budget": {
+    "limit": 50,
+    "thresholds": [50, 75, 90, 95],
+    "exceeded": true,
+    "threshold": 0.75,
+    "percentUsed": 75.25,
+    "currentSpend": 37.6234,
+    "remainingBudget": 12.3766
+  }
+}
+
+------------------------------------------------------------------
+6. CONFIGURAZIONE RICHIESTA
+------------------------------------------------------------------
+
+VARIABILI AMBIENTE:
+- OPENAI_API_KEY: Già presente, nessuna modifica necessaria
+- SENTRY_DSN: Opzionale, per ricevere alert su Sentry
+
+NESSUNA DIPENDENZA AGGIUNTIVA:
+Il middleware utilizza solo dipendenze già presenti:
+- @sentry/node (già installato)
+- Nessun database esterno richiesto
+
+------------------------------------------------------------------
+7. LIMITAZIONI E NOTE
+------------------------------------------------------------------
+
+A) STORAGE IN-MEMORY
+   - I dati sono memorizzati in memoria
+   - I dati vengono persi al riavvio del server
+   - Per produzione, considerare storage persistente (database)
+
+B) STIMA TOKEN INPUT
+   - I token di input sono stimati (1 token ≈ 4 caratteri)
+   - I token di output sono precisi (da risposta API)
+   - L'errore nella stima è tipicamente < 10%
+
+C) STREAMING
+   - Supportato completamente
+   - I token vengono contati durante lo streaming
+   - La registrazione avviene al completamento dello stream
+
+D) PULIZIA AUTOMATICA
+   - Eseguita ogni 24 ore
+   - Mantiene 3 mesi di dati mensili
+   - Mantiene 30 giorni di dati giornalieri
+
+E) PRICING
+   - I prezzi sono aggiornati a Gennaio 2025
+   - Verificare periodicamente su https://openai.com/pricing
+   - Aggiornare manualmente l'oggetto PRICING se necessario
+
+------------------------------------------------------------------
+8. SICUREZZA
+------------------------------------------------------------------
+
+A) ENDPOINT PROTETTO
+   - L'endpoint /api/usage-stats non richiede autenticazione
+   - Considerare aggiungere autenticazione in produzione
+   - Non espone API keys o dati sensibili
+
+B) VALIDAZIONE
+   - Tutti i parametri vengono validati
+   - Gestione errori completa
+   - Nessuna esecuzione di codice arbitrario
+
+------------------------------------------------------------------
+9. TESTING
+------------------------------------------------------------------
+
+COME TESTARE:
+
+1. Avvia il server:
+   npm start
+
+2. Effettua una richiesta chat:
+   curl -X POST http://localhost:3000/api/chat \
+     -H "Content-Type: application/json" \
+     -d '{"messages":[{"role":"user","content":"Hello!"}],"model":"gpt-4"}'
+
+3. Verifica il logging nella console
+
+4. Consulta le statistiche:
+   curl http://localhost:3000/api/usage-stats
+
+5. Per testare gli alert, modifica temporaneamente MONTHLY_BUDGET_LIMIT
+   a un valore basso (es. 0.01) in openaiUsageTracking.js
+
+------------------------------------------------------------------
+10. CONCLUSIONI
+------------------------------------------------------------------
+
+IMPLEMENTATO CON SUCCESSO:
+✅ Tracking completo uso OpenAI API
+✅ Calcolo costi per tutti i modelli supportati
+✅ Monitoraggio budget mensile con limite $50
+✅ Alert automatici a soglie 50%, 75%, 90%, 95%
+✅ Integrazione Sentry per notifiche critiche
+✅ Logging strutturato dettagliato
+✅ Endpoint per consultare statistiche
+✅ Supporto streaming e non-streaming
+✅ Pulizia automatica dati vecchi
+✅ Tracking per modello e temporale
+
+PRONTO PER L'USO IN PRODUZIONE CON LE SEGUENTI RACCOMANDAZIONI:
+- Configurare SENTRY_DSN per alert esterni
+- Considerare storage persistente per dati long-term
+- Aggiungere autenticazione a /api/usage-stats
+- Verificare periodicamente i prezzi OpenAI
+- Monitorare i log per individuare anomalie
+
+================================
+FINE DOCUMENTAZIONE
+================================

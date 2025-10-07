@@ -1,0 +1,133 @@
+PUNTI DI INSERIMENTO UTENTE - APPLICAZIONE VANTYX.AI POC
+================================================================
+
+FRONTEND (React/TypeScript)
+---------------------------
+
+1. COMPONENTE INPUT (src/components/ui/Input.tsx)
+   Tipo: Input generico HTML
+   Descrizione: Componente riutilizzabile per campi di input
+   Props accettate:
+   - Tutti gli attributi HTML standard di <input>
+   - type (text, email, password, number, date, etc.)
+   - value, onChange handlers
+   File: src/components/ui/Input.tsx:17
+
+2. DEMO PAGE - Username Input (src/components/ui/DemoPage.tsx)
+   Tipo: Input di testo
+   Descrizione: Campo username nella pagina demo
+   State: inputValue
+   Handler: onChange={(e) => setInputValue(e.target.value)}
+   File: src/components/ui/DemoPage.tsx:86-91
+
+3. DEMO PAGE - Email Input (src/components/ui/DemoPage.tsx)
+   Tipo: Input email con validazione errori
+   Descrizione: Campo email con visualizzazione errori
+   State: inputWithError
+   Handler: onChange={(e) => setInputWithError(e.target.value)}
+   File: src/components/ui/DemoPage.tsx:96-102
+
+4. DEMO PAGE - Password Input (src/components/ui/DemoPage.tsx)
+   Tipo: Input password
+   Descrizione: Campo password (type="password")
+   File: src/components/ui/DemoPage.tsx:108
+
+5. DEMO PAGE - Number Input (src/components/ui/DemoPage.tsx)
+   Tipo: Input numerico
+   Descrizione: Campo per inserimento numeri (type="number")
+   File: src/components/ui/DemoPage.tsx:109
+
+6. DEMO PAGE - Date Input (src/components/ui/DemoPage.tsx)
+   Tipo: Input data
+   Descrizione: Campo per selezione data (type="date")
+   File: src/components/ui/DemoPage.tsx:110
+
+7. CHAT HOOK - sendMessage (src/hooks/useChat.ts)
+   Tipo: Funzione per invio messaggi chat
+   Descrizione: Hook per gestione chat con validazione input
+   Validazione: content.trim() - rimuove spazi vuoti
+   File: src/hooks/useChat.ts:109-137
+
+8. URL PARAMETERS (src/App.tsx)
+   Tipo: Query parameters URL
+   Descrizione: Parametri URL per attivare sezioni
+   Parameters:
+   - ?moduli - attiva sezione Moduli
+   - ?invest - attiva sezione Invest
+   File: src/App.tsx:4-6
+
+
+BACKEND (Express.js/Node.js)
+-----------------------------
+
+9. API ENDPOINT - /api/chat (server.js)
+   Tipo: POST request body
+   Descrizione: Endpoint principale per chat con OpenAI
+   Input accettati:
+   - req.body.messages (array di messaggi)
+   - req.body.model (stringa, default 'gpt-4')
+
+   Validazioni implementate:
+   - messages deve essere array non vuoto
+   - Ogni message deve avere role ('system', 'user', 'assistant')
+   - Ogni message deve avere content (stringa non vuota)
+   - content max 10000 caratteri
+   - model deve essere in allowedModels: ['gpt-4', 'gpt-4-turbo', 'gpt-3.5-turbo']
+
+   File: server.js:58-186
+
+10. ENVIRONMENT VARIABLES (.env)
+    Tipo: Variabili d'ambiente
+    Descrizione: Configurazione attraverso variabili d'ambiente
+    Variabili:
+    - OPENAI_API_KEY
+    - PORT (default 3000)
+    - PRODUCTION_DOMAIN
+    File: server.js:8-12
+
+
+STORAGE/CACHE (localStorage)
+-----------------------------
+
+11. CHAT CACHE (src/hooks/useChat.ts)
+    Tipo: localStorage read/write
+    Descrizione: Cache delle risposte chat in localStorage
+    Key: 'vantyx_chat_cache'
+    Dati salvati:
+    - question (domanda utente)
+    - answer (risposta assistente)
+    - timestamp
+    File: src/hooks/useChat.ts:34-85
+
+
+INTERAZIONE FINESTRE (Window Management)
+-----------------------------------------
+
+12. WINDOW STORE - User Interactions (src/components/ui_components/Window.tsx)
+    Tipo: Eventi mouse/touch e drag & drop
+    Descrizione: Gestione finestre draggable con interazioni utente
+    Eventi:
+    - onClick/onTouchStart per focus finestra
+    - onDragStop per posizionamento finestra
+    - onResizeStop per ridimensionamento
+    - onClick su bottoni (minimize, maximize, close)
+    File: src/components/ui_components/Window.tsx:86-96
+
+
+RIEPILOGO PUNTI CRITICI DI SICUREZZA
+-------------------------------------
+
+VALIDAZIONE INPUT PRESENTE:
+- ✓ Validazione lunghezza messaggi (max 10000 caratteri)
+- ✓ Validazione tipo di dato (stringhe, array)
+- ✓ Validazione ruoli messaggi (system/user/assistant)
+- ✓ Whitelist modelli OpenAI consentiti
+- ✓ Rate limiting (20 richieste/ora per IP)
+- ✓ CORS configurato con allowed origins
+
+AREE DA VERIFICARE PER SICUREZZA:
+- Input fields nel frontend (potrebbero essere vulnerabili a XSS)
+- localStorage cache (potrebbe contenere dati sensibili)
+- URL parameters (potrebbero essere manipolati)
+- Validazione client-side vs server-side
+- Sanitizzazione output da OpenAI prima della visualizzazione

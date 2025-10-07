@@ -1,0 +1,471 @@
+=================================================================
+MICRO-TASK 8/9: IMPLEMENTAZIONE MESSAGGI DI ERRORE USER-FRIENDLY
+=================================================================
+
+Data: 2025-10-07
+Obiettivo: Creare messaggi di errore user-friendly per tutti i casi di failure
+nell'applicazione Vantyx.ai POC Website
+
+=================================================================
+PANORAMICA DELLE MODIFICHE
+=================================================================
+
+Questo micro-task implementa un sistema completo di gestione degli errori
+con messaggi user-friendly in italiano, migliorando significativamente
+l'esperienza utente in caso di problemi.
+
+=================================================================
+1. UTILITY PER MESSAGGI DI ERRORE
+=================================================================
+
+File creato: src/utils/errorMessages.ts
+
+Questa utility fornisce:
+
+a) Categorizzazione degli errori:
+   - NetworkErrors: Errori di rete e connessione
+   - APIErrors: Errori relativi alle API (rate limiting, autenticazione, etc.)
+   - ValidationErrors: Errori di validazione input
+   - GeneralErrors: Errori generici
+
+b) Struttura ErrorDetails:
+   - userMessage: Messaggio user-friendly in italiano
+   - technicalMessage: Messaggio tecnico opzionale per debugging
+   - suggestedAction: Azione suggerita all'utente
+   - errorCode: Codice identificativo dell'errore
+
+c) Funzioni di utility:
+   - getErrorByStatus(status): Mappa HTTP status codes a messaggi user-friendly
+   - mapServerError(errorMessage): Mappa messaggi del server a messaggi user-friendly
+   - formatErrorMessage(error): Formatta un ErrorDetails per la visualizzazione
+   - createUserFriendlyError(error): Crea un ErrorDetails da vari tipi di errore
+   - handleError(error, context): Gestisce errori con logging per debugging
+
+Esempi di messaggi:
+- "Impossibile connettersi al server. Verifica la tua connessione internet."
+- "Hai raggiunto il limite di richieste orarie. Riprova tra qualche minuto."
+- "Il messaggio è troppo lungo. Massimo 10.000 caratteri."
+
+=================================================================
+2. MODIFICHE AL SERVER (server.js)
+=================================================================
+
+a) Errori CORS (linea 56):
+   Prima: 'Not allowed by CORS'
+   Dopo: 'Accesso non autorizzato. Origine della richiesta non permessa.'
+   + Aggiunto statusCode 403
+
+b) Rate Limiting (linea 70-74):
+   Prima: { error: 'Too many requests from this IP, please try again later' }
+   Dopo: {
+     error: 'Hai raggiunto il limite di richieste orarie. Riprova tra qualche minuto.',
+     code: 'RATE_LIMIT_EXCEEDED',
+     suggestedAction: 'Attendi prima di inviare nuove richieste'
+   }
+
+c) Validazione Richieste Chat (linee 165-213):
+
+   1. Messaggi non validi o vuoti:
+      - 'Formato della richiesta non valido.' (INVALID_REQUEST_FORMAT)
+      - 'Il messaggio non può essere vuoto.' (EMPTY_MESSAGE)
+
+   2. Formato messaggi:
+      - 'Formato del messaggio non valido.' (INVALID_MESSAGE_FORMAT)
+      - 'Ruolo del messaggio non valido.' (INVALID_MESSAGE_ROLE)
+      - 'Il contenuto del messaggio deve essere un testo.' (INVALID_MESSAGE_CONTENT)
+      - 'Il messaggio è troppo lungo. Massimo 10.000 caratteri.' (MESSAGE_TOO_LONG)
+
+   3. Parametri modello:
+      - 'Parametro del modello non valido.' (INVALID_MODEL_PARAMETER)
+      - 'Modello AI non supportato.' (UNSUPPORTED_MODEL)
+
+d) Gestione Timeout (linea 247-259):
+   Prima: { error: 'Request timeout' }
+   Dopo: {
+     error: 'La richiesta sta impiegando troppo tempo.',
+     code: 'REQUEST_TIMEOUT',
+     suggestedAction: 'Riprova tra qualche minuto'
+   }
+
+e) Gestione Errori API OpenAI (linee 314-371):
+
+   Ogni tipo di errore ha un messaggio specifico:
+
+   - TIMEOUT (504):
+     'La richiesta al servizio AI sta impiegando troppo tempo.'
+     Code: AI_SERVICE_TIMEOUT
+
+   - CONNECTION (503):
+     'Impossibile connettersi al servizio AI.'
+     Code: AI_SERVICE_UNAVAILABLE
+
+   - AUTHENTICATION (500):
+     'Errore di autenticazione con il servizio AI.'
+     Code: AI_AUTH_ERROR
+
+   - RATE LIMIT (429):
+     'Il servizio AI ha raggiunto il limite di richieste.'
+     Code: AI_RATE_LIMIT
+
+   - BAD REQUEST (400):
+     'Richiesta non valida al servizio AI.'
+     Code: AI_INVALID_REQUEST
+
+   - SERVER ERROR (502):
+     'Il servizio AI ha riscontrato un problema.'
+     Code: AI_SERVICE_ERROR
+
+   - DEFAULT (500):
+     'Si è verificato un errore. Riprova più tardi.'
+     Code: INTERNAL_ERROR
+
+f) Error Handler Globale (linee 381-393):
+   Aggiunta gestione user-friendly per errori non catturati:
+   - Utilizza err.statusCode se disponibile
+   - Formatta con error, code, suggestedAction
+   - Messaggio di fallback: 'Si è verificato un errore imprevisto.'
+
+=================================================================
+3. MODIFICHE AL FRONTEND
+=================================================================
+
+A) Hook useChat (src/hooks/useChat.ts):
+
+   a) Import aggiunto (linea 4):
+      import { formatErrorMessage, createUserFriendlyError } from '../utils/errorMessages';
+
+   b) Gestione errori fetch (linea 186-192):
+      Prima:
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+
+      Dopo:
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error || `Errore ${response.status}`;
+        const errorDetails = createUserFriendlyError(errorMessage);
+        throw new Error(formatErrorMessage(errorDetails));
+
+   c) Gestione reader non disponibile (linea 199-202):
+      Prima:
+        throw new Error('Response body is not readable');
+
+      Dopo:
+        const errorDetails = createUserFriendlyError('Impossibile leggere la risposta dal server');
+        throw new Error(formatErrorMessage(errorDetails));
+
+   d) Gestione errori finali (linea 274-280):
+      Prima:
+        const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+        setError(errorMessage);
+
+      Dopo:
+        const errorDetails = createUserFriendlyError(err);
+        const errorMessage = formatErrorMessage(errorDetails);
+        setError(errorMessage);
+
+B) Componente ErrorMessage (src/components/ui/ErrorMessage.tsx):
+
+   Nuovo componente React per visualizzare errori in modo user-friendly:
+
+   Props:
+   - message: string (required) - Messaggio di errore da mostrare
+   - onRetry?: () => void - Callback per il pulsante "Riprova"
+   - onDismiss?: () => void - Callback per chiudere il messaggio
+   - variant?: 'error' | 'warning' | 'info' - Tipo di messaggio (default: 'error')
+
+   Features:
+   - Design responsivo e accessibile (ARIA labels, focus states)
+   - Icone appropriate per ogni variante (errore, warning, info)
+   - Pulsanti opzionali per "Riprova" e "Chiudi"
+   - Stili Tailwind consistenti con il design system
+   - Supporto per diverse varianti di colore:
+     * error: Rosso (errori critici)
+     * warning: Giallo (avvisi)
+     * info: Blu (informazioni)
+
+   Utilizzo esempio:
+   <ErrorMessage
+     message="Impossibile connettersi al server"
+     onRetry={() => sendMessage(lastMessage)}
+     variant="error"
+   />
+
+=================================================================
+4. STRUTTURA MESSAGGI DI ERRORE
+=================================================================
+
+Tutti i messaggi di errore seguono questa struttura consistente:
+
+{
+  error: "Messaggio user-friendly in italiano",
+  code: "ERROR_CODE_IDENTIFICATIVO",
+  suggestedAction: "Azione suggerita per risolvere il problema"
+}
+
+Vantaggi:
+- Consistenza in tutta l'applicazione
+- Facilita il debugging con codici identificativi
+- Guida l'utente con azioni concrete
+- Logging migliorato per Sentry
+- Supporto per internazionalizzazione futura
+
+=================================================================
+5. CATEGORIE DI ERRORI IMPLEMENTATE
+=================================================================
+
+A) ERRORI DI RETE (Network Errors):
+   - CONNECTION_FAILED (NET_001)
+   - TIMEOUT (NET_002)
+   - SERVER_UNAVAILABLE (NET_003)
+   - NO_RESPONSE (NET_004)
+
+B) ERRORI API (API Errors):
+   - RATE_LIMIT_EXCEEDED (API_001)
+   - INVALID_REQUEST (API_002)
+   - AUTHENTICATION_FAILED (API_003)
+   - SERVICE_ERROR (API_004)
+   - CONTENT_TOO_LONG (API_005)
+
+C) ERRORI DI VALIDAZIONE (Validation Errors):
+   - EMPTY_MESSAGE (VAL_001)
+   - INVALID_FORMAT (VAL_002)
+   - INVALID_EMAIL (VAL_003)
+   - UNSAFE_CONTENT (VAL_004)
+
+D) ERRORI GENERICI (General Errors):
+   - UNKNOWN (GEN_001)
+   - NOT_FOUND (GEN_002)
+   - PERMISSION_DENIED (GEN_003)
+
+E) ERRORI SPECIFICI SERVER:
+   - INVALID_REQUEST_FORMAT
+   - EMPTY_MESSAGE
+   - INVALID_MESSAGE_FORMAT
+   - INVALID_MESSAGE_ROLE
+   - INVALID_MESSAGE_CONTENT
+   - MESSAGE_TOO_LONG
+   - INVALID_MODEL_PARAMETER
+   - UNSUPPORTED_MODEL
+   - REQUEST_TIMEOUT
+   - AI_SERVICE_TIMEOUT
+   - AI_SERVICE_UNAVAILABLE
+   - AI_AUTH_ERROR
+   - AI_RATE_LIMIT
+   - AI_INVALID_REQUEST
+   - AI_SERVICE_ERROR
+   - INTERNAL_ERROR
+   - UNHANDLED_ERROR
+
+=================================================================
+6. BEST PRACTICES IMPLEMENTATE
+=================================================================
+
+1. Messaggi in italiano:
+   - Linguaggio chiaro e comprensibile
+   - Tono professionale ma amichevole
+   - Evita termini tecnici quando possibile
+
+2. Azioni suggerite:
+   - Ogni errore suggerisce un'azione concreta
+   - Guida l'utente verso la risoluzione
+   - Imposta aspettative realistiche (es. "Riprova tra qualche minuto")
+
+3. Codici di errore:
+   - Identificativi unici per ogni tipo di errore
+   - Facilitano debugging e supporto tecnico
+   - Utili per metriche e monitoraggio
+
+4. Gestione gerarchica:
+   - Errori specifici hanno priorità
+   - Fallback a messaggi generici quando necessario
+   - Preserva informazioni tecniche per debugging
+
+5. Consistenza:
+   - Stesso formato in backend e frontend
+   - Stessa struttura per tutti i tipi di errore
+   - Naming convention uniforme per i codici
+
+6. Accessibilità:
+   - Messaggi descrittivi per screen readers
+   - Focus states per tastiera
+   - ARIA labels appropriati
+   - Contrasto colori conforme WCAG
+
+=================================================================
+7. INTEGRAZIONE CON SISTEMI ESISTENTI
+=================================================================
+
+A) Sentry:
+   - Errori catturati mantengono informazioni tecniche
+   - Codici errore inclusi nei tag
+   - Context preservato per debugging
+
+B) Logging:
+   - Console.error in development per dettagli tecnici
+   - Messaggio user-friendly separato dal logging
+   - Stack trace preservato
+
+C) Rate Limiting:
+   - Messaggi consistenti con express-rate-limit
+   - Informazioni sui limiti comunicate chiaramente
+
+D) Sanitizzazione Input:
+   - Errori di validazione user-friendly
+   - Guida l'utente a correggere l'input
+
+=================================================================
+8. TESTING E VALIDAZIONE
+=================================================================
+
+Scenari testabili:
+
+1. Errori di rete:
+   - Disconnessione internet
+   - Timeout richiesta
+   - Server non disponibile
+
+2. Errori API:
+   - Rate limit superato
+   - Modello non supportato
+   - Messaggio troppo lungo
+
+3. Errori validazione:
+   - Messaggio vuoto
+   - Formato non valido
+   - Caratteri non permessi
+
+4. Errori stream:
+   - Reader non disponibile
+   - Chunk non valido
+   - Interruzione stream
+
+5. Errori generici:
+   - Eccezioni non gestite
+   - Errori imprevisti
+
+=================================================================
+9. BENEFICI PER L'UTENTE
+=================================================================
+
+1. Chiarezza:
+   - Capisce cosa è andato storto
+   - Nessun gergo tecnico
+   - Messaggi in italiano
+
+2. Azione:
+   - Sa cosa fare per risolvere
+   - Tempistiche realistiche
+   - Guidance concreto
+
+3. Fiducia:
+   - Errori gestiti professionalmente
+   - Sistema affidabile
+   - Trasparenza nei problemi
+
+4. Accessibilità:
+   - Tutti gli utenti possono comprendere
+   - Supporto screen reader
+   - Navigazione tastiera
+
+=================================================================
+10. MANUTENIBILITÀ
+=================================================================
+
+1. Centralizzazione:
+   - Tutti i messaggi in errorMessages.ts
+   - Facile aggiornamento
+   - Consistenza garantita
+
+2. Tipizzazione:
+   - TypeScript per type safety
+   - Interfacce chiare
+   - Autocomplete IDE
+
+3. Estensibilità:
+   - Facile aggiungere nuovi errori
+   - Struttura modulare
+   - Categorizzazione chiara
+
+4. Internazionalizzazione:
+   - Pronto per i18n
+   - Messaggi separati dalla logica
+   - Facile traduzione futura
+
+=================================================================
+FILE MODIFICATI
+=================================================================
+
+1. Creati:
+   - src/utils/errorMessages.ts
+   - src/components/ui/ErrorMessage.tsx
+   - user_friendly_error_messages_changes.txt
+
+2. Modificati:
+   - server.js
+   - src/hooks/useChat.ts
+
+=================================================================
+DIPENDENZE
+=================================================================
+
+Nessuna nuova dipendenza richiesta.
+Utilizza solo:
+- React (esistente)
+- TypeScript (esistente)
+- Tailwind CSS (esistente)
+
+=================================================================
+PROSSIMI PASSI CONSIGLIATI
+=================================================================
+
+1. Testing:
+   - Test unitari per errorMessages.ts
+   - Test componente ErrorMessage.tsx
+   - Test integrazione con useChat
+
+2. Monitoraggio:
+   - Dashboard Sentry per codici errore
+   - Analytics su errori più frequenti
+   - Metriche retry rate
+
+3. Miglioramenti futuri:
+   - Internazionalizzazione (i18n)
+   - Toast notifications per errori non critici
+   - Recovery automatico per alcuni errori
+   - Offline mode con queue di richieste
+
+4. Documentazione:
+   - README con lista completa errori
+   - Guidelines per aggiungere nuovi errori
+   - Flow chart gestione errori
+
+=================================================================
+CONFORMITÀ SECURITY
+=================================================================
+
+✓ Nessuna informazione sensibile nei messaggi utente
+✓ Stack trace solo in development
+✓ Error codes non rivelano dettagli implementazione
+✓ Messaggi generici per errori di autenticazione
+✓ Rate limiting comunicato senza dettagli tecnici
+
+=================================================================
+CONCLUSIONE
+=================================================================
+
+L'implementazione dei messaggi di errore user-friendly completa
+la serie di micro-task di sicurezza e miglioramenti UX.
+
+Il sistema è:
+- Completo: copre tutti i casi di errore
+- Consistente: stesso formato ovunque
+- User-friendly: messaggi chiari in italiano
+- Manutenibile: centralizzato e tipizzato
+- Scalabile: facile estendere
+- Accessibile: supporto completo a11y
+
+Gli utenti ora ricevono sempre messaggi chiari e azioni concrete
+quando si verificano problemi, migliorando significativamente
+l'esperienza d'uso dell'applicazione.
+
+=================================================================

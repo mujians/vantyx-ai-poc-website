@@ -1,0 +1,271 @@
+================================================================================
+SENTRY INTEGRATION - ERROR TRACKING & MONITORING
+================================================================================
+
+Data implementazione: 7 Ottobre 2025
+Micro-task: 6/9
+
+================================================================================
+SOMMARIO DELLE MODIFICHE
+================================================================================
+
+Integrato Sentry per error tracking e monitoring sia lato backend (Node.js/Express)
+che lato frontend (React), con configurazione completa per performance monitoring,
+session replay e gestione degli errori.
+
+================================================================================
+1. DIPENDENZE INSTALLATE
+================================================================================
+
+Package installati via npm:
+- @sentry/node@^10.17.0    → Backend error tracking per Node.js
+- @sentry/react@^10.17.0   → Frontend error tracking per React
+
+File modificato:
+- package.json (righe 18-19)
+
+================================================================================
+2. CONFIGURAZIONE BACKEND (Node.js/Express)
+================================================================================
+
+File modificato: server.js
+
+A) Import Sentry (riga 8):
+   import * as Sentry from '@sentry/node';
+
+B) Inizializzazione Sentry (righe 13-25):
+   - Configurazione DSN da variabile ambiente SENTRY_DSN
+   - Environment detection (development/production)
+   - Performance monitoring con tracesSampleRate dinamico:
+     * Production: 10% delle transazioni (0.1)
+     * Development: 100% delle transazioni (1.0)
+   - Auto-discovery delle integrazioni per performance monitoring
+
+C) Middleware Sentry (righe 35-39):
+   - Sentry.Handlers.requestHandler(): traccia tutte le request HTTP
+   - Sentry.Handlers.tracingHandler(): crea trace per performance monitoring
+   - Posizionati PRIMA di tutti gli altri middleware (best practice)
+
+D) Error Capturing nel Chat Endpoint (righe 250-263):
+   - Cattura eccezioni con contesto dettagliato
+   - Tags: endpoint, model
+   - Extra data: messageCount, errorCode, errorStatus
+   - Permette analisi granulare degli errori in Sentry dashboard
+
+E) Error Handler Middleware (righe 298-307):
+   - Sentry.Handlers.errorHandler(): cattura tutti gli errori non gestiti
+   - Fallthrough error handler per risposte generiche
+   - Posizionati DOPO tutti i controller ma PRIMA di altri error middleware
+
+================================================================================
+3. CONFIGURAZIONE FRONTEND (React)
+================================================================================
+
+A) File creato: src/sentry.ts
+
+   Funzionalità implementate:
+
+   - initSentry():
+     * Inizializzazione Sentry con DSN da VITE_SENTRY_DSN
+     * Browser tracing integration per performance
+     * Session Replay con privacy (maskAllText, blockAllMedia):
+       - 10% delle sessioni normali
+       - 100% delle sessioni con errori
+     * beforeSend hook per filtrare dati sensibili (apiKey, token, password)
+
+   - captureError(error, context):
+     * Cattura errori custom con contesto aggiuntivo
+
+   - setUser(user) / clearUser():
+     * Gestione user context per tracciamento
+
+   - addBreadcrumb(message, data):
+     * Aggiunta breadcrumb per debugging
+
+B) File modificato: src/App.tsx (righe 2-3, 5-6)
+   - Import initSentry
+   - Chiamata initSentry() all'avvio dell'app
+   - Inizializzazione PRIMA del render del BrowserRouter
+
+================================================================================
+4. VARIABILI D'AMBIENTE
+================================================================================
+
+File modificato: .env.example
+
+Nuove variabili aggiunte:
+
+# Backend Sentry DSN
+SENTRY_DSN=your_sentry_backend_dsn_here
+
+# Frontend Sentry DSN (prefisso VITE_ per Vite.js)
+VITE_SENTRY_DSN=your_sentry_frontend_dsn_here
+
+# Environment (già esistente, esteso per Sentry)
+NODE_ENV=development
+
+File modificato: envValidation.js (riga 9)
+- Aggiunto SENTRY_DSN come campo optional nello schema Zod
+- Validazione ambiente non richiede SENTRY_DSN (permette disabilitazione)
+
+================================================================================
+5. FUNZIONALITÀ IMPLEMENTATE
+================================================================================
+
+BACKEND:
+✓ Error tracking automatico per tutte le eccezioni
+✓ Performance monitoring con transaction tracing
+✓ Request/Response tracing
+✓ Context-aware error reporting (endpoint, model, message count)
+✓ Gestione condizionale (solo se SENTRY_DSN configurato)
+
+FRONTEND:
+✓ Error boundary integration automatica
+✓ Browser performance monitoring
+✓ Session replay (con privacy)
+✓ User context tracking
+✓ Breadcrumb trail per debugging
+✓ Filtro dati sensibili prima dell'invio
+✓ Gestione condizionale (solo se VITE_SENTRY_DSN configurato)
+
+================================================================================
+6. CONFIGURAZIONE SENTRY DASHBOARD
+================================================================================
+
+Per completare l'integrazione, è necessario:
+
+1. Creare un account Sentry (https://sentry.io)
+2. Creare due progetti:
+   - Un progetto Node.js per il backend
+   - Un progetto React per il frontend
+3. Copiare i DSN forniti da Sentry
+4. Configurare le variabili ambiente:
+   - SENTRY_DSN nel file .env per il backend
+   - VITE_SENTRY_DSN nel file .env per il frontend
+
+================================================================================
+7. SAMPLE RATE CONFIGURATION
+================================================================================
+
+Performance Monitoring (Backend):
+- Production: 10% delle transazioni (tracesSampleRate: 0.1)
+- Development: 100% delle transazioni (tracesSampleRate: 1.0)
+
+Session Replay (Frontend):
+- Sessioni normali: 10% (replaysSessionSampleRate: 0.1)
+- Sessioni con errori: 100% (replaysOnErrorSampleRate: 1.0)
+
+Queste configurazioni ottimizzano i costi mantenendo visibilità completa sugli errori.
+
+================================================================================
+8. PRIVACY & SECURITY
+================================================================================
+
+Misure implementate:
+
+1. Frontend (src/sentry.ts):
+   - maskAllText: true → maschera tutto il testo nelle session replay
+   - blockAllMedia: true → blocca immagini/video nelle session replay
+   - beforeSend hook filtra: apiKey, token, password dai breadcrumb
+
+2. Backend (server.js):
+   - Nessun dato utente sensibile inviato automaticamente
+   - Solo metadati tecnici (endpoint, model, error codes)
+
+3. Configurazione opzionale:
+   - Sentry si attiva solo se DSN configurato
+   - Permette deployment senza Sentry in ambienti di test
+
+================================================================================
+9. TESTING
+================================================================================
+
+Per testare l'integrazione Sentry:
+
+Backend:
+1. Configurare SENTRY_DSN in .env
+2. Avviare il server: npm run dev
+3. Generare un errore (es. chiamata con API key invalida)
+4. Verificare l'errore in Sentry dashboard
+
+Frontend:
+1. Configurare VITE_SENTRY_DSN in .env
+2. Avviare l'app: npm run dev (se presente build frontend)
+3. Generare un errore JavaScript
+4. Verificare l'errore e session replay in Sentry dashboard
+
+Senza configurazione:
+- L'app funziona normalmente senza Sentry
+- Console warning: "Sentry DSN not configured. Error tracking disabled."
+
+================================================================================
+10. BENEFICI DELL'INTEGRAZIONE
+================================================================================
+
+✓ Monitoraggio errori in tempo reale
+✓ Stack traces completi per debugging
+✓ Performance insights (slow endpoints, latency)
+✓ User impact analysis (quanti utenti affetti da un errore)
+✓ Session replay per riprodurre bug frontend
+✓ Alert automatici per errori critici
+✓ Trend analysis e error grouping
+✓ Release tracking (correlazione errori con deploy)
+
+================================================================================
+FILE MODIFICATI/CREATI
+================================================================================
+
+Modificati:
+1. server.js
+   - Import Sentry
+   - Inizializzazione (righe 13-25)
+   - Request/Tracing handlers (righe 35-39)
+   - Error capturing in chat endpoint (righe 250-263)
+   - Error handler middleware (righe 298-307)
+
+2. src/App.tsx
+   - Import initSentry (righe 2-3)
+   - Chiamata initSentry() (righe 5-6)
+
+3. .env.example
+   - Aggiunte variabili SENTRY_DSN e VITE_SENTRY_DSN (righe 13-15)
+   - Riorganizzazione variabili per chiarezza
+
+4. envValidation.js
+   - Aggiunto campo SENTRY_DSN opzionale (riga 9)
+
+5. package.json
+   - Dipendenze @sentry/node e @sentry/react (righe 18-19)
+
+Creati:
+1. src/sentry.ts (nuovo file)
+   - Utility functions per Sentry frontend
+   - Configurazione completa con privacy e filtering
+
+2. sentry_integration_changes.txt (questo file)
+   - Documentazione completa delle modifiche
+
+================================================================================
+NEXT STEPS
+================================================================================
+
+Dopo questa implementazione, si raccomanda:
+
+1. Configurare i DSN Sentry in produzione
+2. Testare error tracking in staging
+3. Configurare alert Sentry per errori critici
+4. Impostare release tracking per correlare errori con deployment
+5. Configurare source maps upload per stack traces leggibili
+6. Considerare l'implementazione di error boundaries React personalizzati
+
+================================================================================
+COMPATIBILITÀ
+================================================================================
+
+✓ Node.js >= 18.0.0
+✓ Express 5.x
+✓ React (qualsiasi versione recente)
+✓ Vite.js (per variabili ambiente VITE_*)
+✓ Production & Development environments
+
+================================================================================

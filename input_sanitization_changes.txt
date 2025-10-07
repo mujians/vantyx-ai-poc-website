@@ -1,0 +1,193 @@
+IMPLEMENTAZIONE SANITIZZAZIONE INPUT - VANTYX.AI POC
+=====================================================
+
+Data: 2025-10-07
+Micro-task: 2/9 - Implementa sanitizzazione input
+
+RIEPILOGO MODIFICHE
+-------------------
+
+1. INSTALLAZIONE DIPENDENZE
+   - Pacchetto installato: dompurify, @types/dompurify, isomorphic-dompurify
+   - Comando: npm install dompurify @types/dompurify isomorphic-dompurify
+   - Versione: Ultima disponibile (verificabile in package.json)
+
+2. CREAZIONE UTILITY DI SANITIZZAZIONE
+   File: src/utils/sanitize.ts
+   Descrizione: Creato modulo di utilità con funzioni di sanitizzazione riutilizzabili
+
+   Funzioni implementate:
+   - sanitizeHTML(dirty: string): string
+     Sanitizza HTML permettendo solo tag sicuri (b, i, em, strong, a, p, br, ul, ol, li, code, pre)
+
+   - sanitizeText(input: string): string
+     Rimuove completamente tutti i tag HTML mantenendo solo il contenuto testuale
+
+   - sanitizeEmail(email: string): string
+     Valida e sanitizza indirizzi email con regex pattern
+
+   - sanitizeURL(url: string): string
+     Valida URL permettendo solo protocolli sicuri (http, https)
+
+   - sanitizeNumber(input: string | number): number | null
+     Converte e valida input numerici
+
+   - sanitizeJSON<T>(json: string): T | null
+     Parse sicuro di JSON con gestione errori
+
+3. MODIFICHE FRONTEND
+
+   A) File: src/hooks/useChat.ts (Hook gestione chat)
+      Linee modificate: 3, 40-52, 113-114, 130, 171, 219-220, 252
+
+      Modifiche:
+      - Import funzioni sanitizzazione (linea 3)
+      - sanitizeJSON per parsing sicuro cache localStorage (linea 40)
+      - sanitizeHTML per output cache (linea 52)
+      - sanitizeText per input utente prima dell'invio (linea 113)
+      - sanitizeHTML per chunk streaming da OpenAI (linea 219)
+
+      Protezioni implementate:
+      - Input utente sanitizzato prima di essere aggiunto ai messaggi
+      - Cache localStorage validata con sanitizeJSON
+      - Risposte API sanitizzate prima del rendering
+      - Streaming chunks sanitizzati in tempo reale
+
+   B) File: src/components/ui/DemoPage.tsx (Pagina demo UI)
+      Linee modificate: 7, 91, 101
+
+      Modifiche:
+      - Import funzioni sanitizzazione (linea 7)
+      - sanitizeText per input username (linea 91)
+      - sanitizeEmail per input email (linea 101)
+
+      Protezioni implementate:
+      - Input username sanitizzato rimuovendo HTML
+      - Input email validato e sanitizzato con pattern email
+
+4. MODIFICHE BACKEND
+
+   File: server.js (Express.js server)
+   Linee modificate: 7, 54-67, 94-115, 147, 168-169
+
+   Modifiche:
+   - Import DOMPurify isomorphic (linea 7)
+   - Creazione funzioni utility sanitizeText e sanitizeHTML (linee 54-67)
+   - Sanitizzazione messaggi prima dell'invio a OpenAI (linee 110-115)
+   - Utilizzo messaggi sanitizzati nell'API call (linea 147)
+   - Sanitizzazione output streaming da OpenAI (linee 168-169)
+
+   Protezioni implementate:
+   - Tutti i messaggi ricevuti dal client sanitizzati prima dell'elaborazione
+   - Array sanitizedMessages creato con contenuto pulito
+   - Risposte OpenAI sanitizzate prima dell'invio al client
+   - Protezione double-layer: input sanitizzato + output sanitizzato
+
+PUNTI DI PROTEZIONE IMPLEMENTATI
+---------------------------------
+
+FRONTEND:
+✓ Input chat utente (useChat.ts:113)
+✓ Input username (DemoPage.tsx:91)
+✓ Input email (DemoPage.tsx:101)
+✓ localStorage cache read (useChat.ts:40)
+✓ localStorage cache output (useChat.ts:52)
+✓ Streaming chunks OpenAI (useChat.ts:219)
+
+BACKEND:
+✓ Messaggi ricevuti dall'API (server.js:110-115)
+✓ Output streaming OpenAI (server.js:168)
+
+VALIDAZIONI GIÀ ESISTENTI MANTENUTE
+------------------------------------
+✓ Lunghezza max 10000 caratteri
+✓ Validazione ruoli messaggi (system/user/assistant)
+✓ Validazione tipo dato (string, array)
+✓ Whitelist modelli OpenAI
+✓ Rate limiting (20 req/ora per IP)
+✓ CORS configurato
+
+CONFIGURAZIONE DOMPURIFY
+-------------------------
+
+Configurazione HTML (tag permessi):
+- Tag formattazione: b, i, em, strong
+- Tag strutturali: p, br, ul, ol, li
+- Tag codice: code, pre
+- Tag link: a (con attributi href, target, rel)
+
+Configurazione restrittiva:
+- ALLOW_DATA_ATTR: false (blocca attributi data-*)
+- KEEP_CONTENT: true (mantiene contenuto anche se tag rimossi)
+- Tutti gli script e event handler rimossi automaticamente
+
+PROTEZIONE DA VULNERABILITÀ
+----------------------------
+
+1. XSS (Cross-Site Scripting)
+   - Sanitizzazione HTML su tutti gli input utente
+   - Rimozione script tags e event handlers
+   - Sanitizzazione output API prima del rendering
+
+2. HTML Injection
+   - Whitelist tag HTML permessi molto ristretta
+   - Attributi pericolosi rimossi automaticamente
+
+3. localStorage Poisoning
+   - Validazione JSON con sanitizeJSON
+   - Sanitizzazione contenuto cache prima dell'uso
+
+4. API Injection
+   - Messaggi sanitizzati prima dell'invio a OpenAI
+   - Protezione double-layer (frontend + backend)
+
+5. Email/URL Injection
+   - Validazione pattern con regex
+   - Whitelist protocolli URL (solo http/https)
+
+TEST CONSIGLIATI
+-----------------
+
+1. Input XSS comuni:
+   - <script>alert('XSS')</script>
+   - <img src=x onerror=alert('XSS')>
+   - javascript:alert('XSS')
+   - <iframe src="javascript:alert('XSS')">
+
+2. HTML Injection:
+   - <div onclick="malicious()">Click me</div>
+   - <style>body{display:none}</style>
+   - <link rel="stylesheet" href="malicious.css">
+
+3. Cache Poisoning:
+   - localStorage con JSON malformato
+   - localStorage con script injection
+
+4. Email/URL validation:
+   - Email con caratteri speciali: test@<script>alert(1)</script>.com
+   - URL con protocolli pericolosi: javascript:alert(1)
+
+COMPATIBILITÀ
+-------------
+- Browser moderni (Chrome, Firefox, Safari, Edge)
+- Node.js backend (Express.js)
+- React 18+
+- TypeScript
+
+NOTE IMPLEMENTATIVE
+-------------------
+
+1. isomorphic-dompurify usato per compatibilità server/client
+2. Sanitizzazione applicata il più vicino possibile al punto di input
+3. Double sanitization evitata dove possibile per performance
+4. Funzioni utility centralizzate per consistenza
+5. Type safety garantita con TypeScript
+
+PROSSIMI PASSI CONSIGLIATI
+---------------------------
+
+1. Testing approfondito con payload XSS comuni
+2. Audit sicurezza completo
+3. Implementazione CSP (Content Security Policy)
+4. Logging tentativi di injection per monitoring
+5. Rate limiting più granulare per endpoint specifici

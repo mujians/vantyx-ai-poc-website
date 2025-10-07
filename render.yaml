@@ -1,0 +1,41 @@
+services:
+  # Production environment
+  - type: web
+    name: vantyx-poc-backend
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm start
+    branch: master
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: ENVIRONMENT
+        value: production
+      - key: PORT
+        value: 10000
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: PRODUCTION_DOMAIN
+        sync: false
+    healthCheckPath: /health
+
+  # Staging environment (preview branches)
+  - type: web
+    name: vantyx-poc-backend-staging
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm start
+    previewsEnabled: true
+    previewsExpireAfterDays: 7
+    envVars:
+      - key: NODE_ENV
+        value: development
+      - key: ENVIRONMENT
+        value: staging
+      - key: PORT
+        value: 10000
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: STAGING_DOMAIN
+        sync: false
+    healthCheckPath: /health
